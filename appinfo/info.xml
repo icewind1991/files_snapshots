@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<info>
+	<id>files_snapshots</id>
+	<name>Snapshots</name>
+	<licence>AGPL</licence>
+	<author>Robin Appelman</author>
+	<description>Access filesystem snapshots trough Nextcloud</description>
+	<version>0.1.1</version>
+	<namespace>Files_Snapshots</namespace>
+	<dependencies>
+		<nextcloud min-version="12" max-version="13" />
+	</dependencies>
+
+	<settings>
+		<admin>OCA\Files_Snapshots\Settings\Admin</admin>
+		<admin-section>OCA\Files_Snapshots\Settings\Section</admin-section>
+	</settings>
+</info>
