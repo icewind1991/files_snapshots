@@ -53,7 +53,7 @@ class DownloadResponse extends Response implements ICallbackResponse {
 		$this->setHeaders(array_merge($this->getHeaders(), $headers));
 		$this->addHeader('Content-Length', $length);
 		$this->addHeader('Content-Type', $mimeType);
-//		$this->addHeader('Content-Disposition', 'inline; filename="' . rawurldecode($name) . '"');
+		$this->addHeader('Content-Disposition', 'inline; filename="' . rawurldecode($name) . '"');
 
 		$lastModifiedDate = new \DateTime();
 		$lastModifiedDate->setTimestamp($lastModified);

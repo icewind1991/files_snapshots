@@ -12,7 +12,7 @@
 
 (function() {
 	var TEMPLATE_ITEM =
-		'<li data-revision="{{timestamp}}">' +
+		'<li data-revision="{{id}}">' +
 		'<div>' +
 		'<div class="preview-container">' +
 		'<img class="preview" src="{{previewUrl}}" width="44" height="44"/>' +

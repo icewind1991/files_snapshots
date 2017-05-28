@@ -26,6 +26,7 @@ use OCA\Files_Snapshots\DownloadResponse;
 use OCA\Files_Snapshots\Snapshot;
 use OCA\Files_Snapshots\SnapshotManager;
 use OCP\AppFramework\Controller;
+use OCP\Files\File;
 use OCP\Files\Folder;
 use OCP\Files\NotFoundException;
 use OCP\IRequest;
@@ -103,5 +104,36 @@ class VersionController extends Controller {
 		$handle = $snapshot->readFile($path);
 
 		return new DownloadResponse($handle, $snapshot->getSize($path), $node->getName(), $snapshot->getMtime($path), $node->getMimetype());
+	}
+
+	/**
+	 * @param $file
+	 * @param $revision
+	 * @throws NotFoundException
+	 * @NoAdminRequired
+	 */
+	public function rollback($file, $revision) {
+		$node = $this->userFolder->get($file);
+		if (!$node instanceof File) {
+			throw new NotFoundException();
+		}
+		$path = $node->getPath();
+
+		$snapshot = $this->snapshotManager->getSnapshot($revision);
+		if (!$snapshot || !$snapshot->hasFile($path)) {
+			throw new NotFoundException();
+		}
+
+		$source = $snapshot->readFile($path);
+
+		$target = $node->fopen('w');
+		stream_copy_to_stream($source, $target);
+		fclose($source);
+		fclose($target);
+
+		return [
+			'revision' => $revision,
+			'file' => $file
+		];
 	}
 }

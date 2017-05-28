@@ -44,5 +44,10 @@ $application->registerRoutes($this, [
 			'url' => '/download',
 			'verb' => 'GET',
 		],
+		[
+			'name' => 'Version#rollback',
+			'url' => '/rollback',
+			'verb' => 'GET',
+		]
 	],
 ]);
