@@ -9,6 +9,7 @@ style('files_snapshots', 'settings');
 	<h2><?php p($l->t('Snapshots')); ?></h2>
 
 	<table class="settings">
+		<tbody>
 		<tr>
 			<td>
 				<label for="format">Snapshot format</label>
@@ -31,5 +32,20 @@ style('files_snapshots', 'settings');
 				<input type="submit" value="Save"/>
 			</td>
 		</tr>
+		</tbody>
+	</table>
+	<h2>Discovered Snapshots</h2>
+	<div class="loading"></div>
+	<table class="result grid hidden">
+		<thead>
+		<tr>
+			<th><?php p($l->t('Snapshot')); ?></th>
+			<th><?php p($l->t('Date')); ?></th>
+		</tr>
+		</thead>
+		<tbody>
+		<tr>
+		</tr>
+		</tbody>
 	</table>
 </form>

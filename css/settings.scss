@@ -1,6 +1,7 @@
 #files_snapshots {
   table.settings {
     width: 100%;
+    margin-bottom: 3em;
 
     td:first-child {
       width: 200px;
@@ -14,5 +15,22 @@
     input[type=submit] {
       width: 100px;
     }
+  }
+
+  table.result {
+    margin-top: 1em;
+    width: 100%;
+
+    td {
+      padding: 5px;
+    }
+
+    tr.error td {
+      border-bottom: none 0;
+    }
+  }
+
+  div.loading {
+    padding-top: 15em;
   }
 }
