@@ -2,6 +2,8 @@
 
 Access filesystem snapshots from Nextcloud.
 
+![settings](screenshots/settings.png)
+
 Allows using filesystem snapshots (such as provided by zfs and btrfs) instead of builtin Nextcloud versions.
 
 ## Limitations
