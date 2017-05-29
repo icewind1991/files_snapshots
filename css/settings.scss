@@ -1,0 +1,18 @@
+#files_snapshots {
+  table.settings {
+    width: 100%;
+
+    td:first-child {
+      width: 200px;
+    }
+
+    td:nth-child(2) input {
+      width: 400px;
+      max-width: calc(100% - 10px);
+    }
+
+    input[type=submit] {
+      width: 100px;
+    }
+  }
+}
