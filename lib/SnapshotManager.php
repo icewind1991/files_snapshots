@@ -62,12 +62,20 @@ class SnapshotManager {
 		closedir($dh);
 	}
 
+	/**
+	 * @param $file
+	 * @return Snapshot[]
+	 */
 	public function listSnapshotsForFile($file) {
 		$lastMtime = 0;
-		return new \CallbackFilterIterator($this->listAllSnapshots(), function (Snapshot $snapshot) use (&$lastMtime, $file) {
-			if ($snapshot->getSnapshotDate() === false) {
-				return false;
-			}
+		$allSnapshots = array_filter(iterator_to_array($this->listAllSnapshots()), function(Snapshot $snapshot) {
+			return $snapshot->getSnapshotDate() instanceof \DateTime;
+		});
+
+		usort($allSnapshots, function (Snapshot $a, Snapshot $b) {
+			return $a->getSnapshotDate()->getTimestamp() - $b->getSnapshotDate()->getTimestamp();
+		});
+		return array_filter($allSnapshots, function (Snapshot $snapshot) use (&$lastMtime, $file) {
 			$snapshotMtime = $snapshot->getMtime($file);
 			if ($snapshotMtime > $lastMtime) {
 				$lastMtime = $snapshotMtime;

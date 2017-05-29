@@ -60,7 +60,7 @@ class VersionController extends Controller {
 			throw new NotFoundException();
 		}
 		$path = $node->getPath();
-		$snapshots = iterator_to_array($this->snapshotManager->listSnapshotsForFile($path));
+		$snapshots = $this->snapshotManager->listSnapshotsForFile($path);
 
 		$versions = array_map(function (Snapshot $snapshot) use ($path) {
 			return [
