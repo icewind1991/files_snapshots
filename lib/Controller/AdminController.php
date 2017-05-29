@@ -53,6 +53,9 @@ class AdminController extends Controller {
 	public function testSettings($snapshotFormat, $dateFormat) {
 		$manager = new SnapshotManager($snapshotFormat, $dateFormat);
 		$snapshots = iterator_to_array($manager->listAllSnapshots());
+		usort($snapshots, function (Snapshot $a, Snapshot $b) {
+			return strcmp($a->getName(), $b->getName());
+		});
 
 		$names = array_map(function (Snapshot $snapshot) {
 			return $snapshot->getName();
