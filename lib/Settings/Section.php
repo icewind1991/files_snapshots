@@ -75,6 +75,6 @@ class Section implements IIconSection {
 	 * {@inheritdoc}
 	 */
 	public function getIcon() {
-		return $this->url->imagePath('files_snapshots', 'app.svg');
+		return $this->url->imagePath('core', 'actions/history.svg');
 	}
 }
