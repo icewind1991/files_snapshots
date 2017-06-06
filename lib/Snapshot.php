@@ -18,7 +18,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-
 namespace OCA\Files_Snapshots;
 
 
@@ -32,6 +31,9 @@ class Snapshot {
 	/** @var string */
 	private $dateFormat;
 
+    /** @var string */
+	private $userFormat;
+
 	/**
 	 * Snapshot constructor.
 	 *
@@ -39,10 +41,11 @@ class Snapshot {
 	 * @param string $name
 	 * @param string $dateFormat
 	 */
-	public function __construct($path, $name, $dateFormat) {
+	public function __construct($path, $name, $dateFormat, $userFormat) {
 		$this->path = rtrim($path, '/');
 		$this->name = $name;
 		$this->dateFormat = $dateFormat;
+		$this->userFormat=$userFormat;
 	}
 
 	/**
@@ -59,8 +62,19 @@ class Snapshot {
 		return $this->name;
 	}
 
+    public function getUser() {
+        if (preg_match("/".$this->userFormat."/",$this->getName(),$result)) {
+            return $result[0];
+        }
+        else {
+            return null;
+        }
+
+    }
+
 	public function getFilePath($file) {
-		return $this->path . '/' . $file;
+	    $file = substr($file,strlen($this->getUser())+1);
+		return $this->path ."/". $file;
 	}
 
 	public function hasFile($file) {

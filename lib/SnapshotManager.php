@@ -35,15 +35,19 @@ class SnapshotManager {
 	/** @var  string */
 	private $dateFormat;
 
+    /** @var  string */
+    private $userFormat;
+
 	/**
 	 * SnapshotManager constructor.
 	 *
 	 * @param string $snapshotFormat
 	 * @param string $dateFormat
 	 */
-	public function __construct($snapshotFormat, $dateFormat) {
+	public function __construct($snapshotFormat, $dateFormat, $userFormat) {
 		$this->snapshotFormat = $snapshotFormat;
 		$this->dateFormat = $dateFormat;
+		$this->userFormat = $userFormat;
 
 		list($this->snapshotPrefix, $this->snapshotPostfix) = explode('/%snapshot%/', $snapshotFormat);
 	}
@@ -55,8 +59,8 @@ class SnapshotManager {
 		$dh = opendir($this->snapshotPrefix);
 		while ($file = readdir($dh)) {
 			$path = $this->snapshotPrefix . '/' . $file;
-			if ($file[0] !== '' && is_dir($path) && is_dir($path . '/' . $this->snapshotPostfix)) {
-				yield new Snapshot($path . '/' . $this->snapshotPostfix, $file, $this->dateFormat);
+			if ($file != '.' && $file != '..' && $file[0] !== '' && is_dir($path) && is_dir($path . '/' . $this->snapshotPostfix)) {
+				yield new Snapshot($path . '/' . $this->snapshotPostfix, $file, $this->dateFormat, $this->userFormat);
 			}
 		}
 		closedir($dh);
@@ -86,7 +90,7 @@ class SnapshotManager {
 	}
 
 	public function getSnapshot($id) {
-		$path = $path = $this->snapshotPrefix . '/' . $id . '/' . $this->snapshotPostfix;
-		return is_dir($path) ? new Snapshot($path, $id, $this->dateFormat) : null;
+		$path = $this->snapshotPrefix . '/' . $id . '/' . $this->snapshotPostfix;
+		return is_dir($path) ? new Snapshot($path, $id, $this->dateFormat, $this->userFormat) : null;
 	}
 }

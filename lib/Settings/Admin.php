@@ -43,7 +43,8 @@ class Admin implements ISettings {
 	public function getForm() {
 		$parameters = [
 			'snapshot_format' => $this->config->getAppValue('files_snapshots', 'snap_format'),
-			'date_format' => $this->config->getAppValue('files_snapshots', 'date_format', 'Y-m-d_H:i:s')
+			'date_format' => $this->config->getAppValue('files_snapshots', 'date_format', 'Y-m-d_H:i:s'),
+            'user_format' => $this->config->getAppValue('files_snapshots', 'user_format', '')
 		];
 
 		return new TemplateResponse('files_snapshots', 'settings', $parameters);

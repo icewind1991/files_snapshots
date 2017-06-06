@@ -35,7 +35,8 @@ class Application extends App {
 			$config = $appContainer->getServer()->getConfig();
 			return new SnapshotManager(
 				$config->getAppValue('files_snapshots', 'snap_format'),
-				$config->getAppValue('files_snapshots', 'date_format', 'Y-m-d_H:i:s')
+				$config->getAppValue('files_snapshots', 'date_format', 'Y-m-d_H:i:s'),
+                $config->getAppValue('files_snapshots', 'user_format', '')
 			);
 		});
 	}
