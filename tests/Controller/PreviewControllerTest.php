@@ -4,12 +4,12 @@
  *
  * @author Roeland Jago Douma <roeland@famdouma.nl>
  *
- * @license GNU AGPL version 3 or any later version
+ * @license GNU AGPL snapshot 3 or any later snapshot
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * published by the Free Software Foundation, either snapshot 3 of the
+ * License, or (at your option) any later snapshot.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -20,9 +20,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-namespace OCA\Files_Versions\Tests\Controller;
+namespace OCA\Files_Snapshots\Tests\Controller;
 
-use OCA\Files_Versions\Controller\PreviewController;
+use OCA\Files_Snapshots\Controller\PreviewController;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\DataResponse;
 use OCP\AppFramework\Http\FileDisplayResponse;
@@ -62,7 +62,7 @@ class PreviewControllerTest extends TestCase {
 		$this->previewManager = $this->createMock(IPreview::class);
 
 		$this->controller = new PreviewController(
-			'files_versions',
+			'files_snapshots',
 			$this->createMock(IRequest::class),
 			$this->rootFolder,
 			$this->userId,
@@ -92,7 +92,7 @@ class PreviewControllerTest extends TestCase {
 		$this->assertEquals($expected, $res);
 	}
 
-	public function testInvalidVersion() {
+	public function testInvalidSnapshot() {
 		$res = $this->controller->getPreview('file', 10, 0);
 		$expected = new DataResponse([], Http::STATUS_BAD_REQUEST);
 
@@ -102,7 +102,7 @@ class PreviewControllerTest extends TestCase {
 	public function testValidPreview() {
 		$userFolder = $this->createMock(Folder::class);
 		$userRoot = $this->createMock(Folder::class);
-		$versions = $this->createMock(Folder::class);
+		$snapshots = $this->createMock(Folder::class);
 
 		$this->rootFolder->method('getUserFolder')
 			->with($this->userId)
@@ -110,15 +110,15 @@ class PreviewControllerTest extends TestCase {
 		$userFolder->method('getParent')
 			->willReturn($userRoot);
 		$userRoot->method('get')
-			->with('files_versions')
-			->willReturn($versions);
+			->with('files_snapshots')
+			->willReturn($snapshots);
 
 		$this->mimeTypeDetector->method('detectPath')
 			->with($this->equalTo('file'))
 			->willReturn('myMime');
 
 		$file = $this->createMock(File::class);
-		$versions->method('get')
+		$snapshots->method('get')
 			->with($this->equalTo('file.v42'))
 			->willReturn($file);
 
@@ -135,10 +135,10 @@ class PreviewControllerTest extends TestCase {
 		$this->assertEquals($expected, $res);
 	}
 
-	public function testVersionNotFound() {
+	public function testSnapshotNotFound() {
 		$userFolder = $this->createMock(Folder::class);
 		$userRoot = $this->createMock(Folder::class);
-		$versions = $this->createMock(Folder::class);
+		$snapshots = $this->createMock(Folder::class);
 
 		$this->rootFolder->method('getUserFolder')
 			->with($this->userId)
@@ -146,15 +146,15 @@ class PreviewControllerTest extends TestCase {
 		$userFolder->method('getParent')
 			->willReturn($userRoot);
 		$userRoot->method('get')
-			->with('files_versions')
-			->willReturn($versions);
+			->with('files_snapshots')
+			->willReturn($snapshots);
 
 		$this->mimeTypeDetector->method('detectPath')
 			->with($this->equalTo('file'))
 			->willReturn('myMime');
 
 		$file = $this->createMock(File::class);
-		$versions->method('get')
+		$snapshots->method('get')
 			->with($this->equalTo('file.v42'))
 			->willThrowException(new NotFoundException());
 

@@ -1,11 +1,11 @@
 OC.L10N.register(
-    "files_versions",
+    "files_snapshots",
     {
     "Could not revert: %s" : "Tidak dapat kembalikan: %s",
-    "Versions" : "Versi",
+    "Snapshots" : "Versi",
     "Failed to revert {file} to revision {timestamp}." : "Gagal kembalikan {file} ke semakan {timestamp}.",
     "Restore" : "Pulihkan",
-    "More versions..." : "Lagi versi...",
-    "No other versions available" : "Tiada lagi versi lain"
+    "More snapshots..." : "Lagi versi...",
+    "No other snapshots available" : "Tiada lagi versi lain"
 },
 "nplurals=1; plural=0;");

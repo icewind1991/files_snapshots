@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2015
  *
- * This file is licensed under the Affero General Public License version 3
+ * This file is licensed under the Affero General Public License snapshot 3
  * or later.
  *
  * See the COPYING-README file.
@@ -16,7 +16,7 @@
 	 */
 	OCA.Snapshots.Util = {
 		/**
-		 * Initialize the versions plugin.
+		 * Initialize the snapshots plugin.
 		 *
 		 * @param {OCA.Files.FileList} fileList file list to be extended
 		 */
@@ -25,7 +25,7 @@
 				return;
 			}
 
-			fileList.registerTabView(new OCA.Snapshots.VersionsTabView('snapshotsTabView', {order: -10}));
+			fileList.registerTabView(new OCA.Snapshots.SnapshotsTabView('snapshotsTabView', {order: -10}));
 		}
 	};
 })();

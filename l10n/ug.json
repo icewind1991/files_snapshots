@@ -1,5 +1,5 @@
 { "translations": {
     "Could not revert: %s" : "ئەسلىگە قايتۇرالمايدۇ: %s",
-    "Versions" : "نەشرى"
+    "Snapshots" : "نەشرى"
 },"pluralForm" :"nplurals=1; plural=0;"
 }

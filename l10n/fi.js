@@ -1,14 +1,14 @@
 OC.L10N.register(
-    "files_versions",
+    "files_snapshots",
     {
     "Could not revert: %s" : "Palautus epäonnistui: %s",
-    "Versions" : "Versiot",
+    "Snapshots" : "Versiot",
     "Failed to revert {file} to revision {timestamp}." : "Tiedoston {file} palautus versioon {timestamp} epäonnistui.",
     "_%n byte_::_%n bytes_" : ["%n tavu","%n tavua"],
     "Restore" : "Palauta",
-    "No earlier versions available" : "Ei aikaisempia versioita saatavilla",
-    "More versions …" : "Lisää versioita...",
-    "No versions available" : "Ei versioita saatavilla",
-    "More versions..." : "Lisää versioita..."
+    "No earlier snapshots available" : "Ei aikaisempia versioita saatavilla",
+    "More snapshots …" : "Lisää versioita...",
+    "No snapshots available" : "Ei versioita saatavilla",
+    "More snapshots..." : "Lisää versioita..."
 },
 "nplurals=2; plural=(n != 1);");

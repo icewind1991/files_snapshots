@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2015
  *
- * This file is licensed under the Affero General Public License version 3
+ * This file is licensed under the Affero General Public License snapshot 3
  * or later.
  *
  * See the COPYING-README file.
@@ -10,9 +10,9 @@
 
 (function() {
 	/**
-	 * @memberof OCA.Versions
+	 * @memberof OCA.Snapshots
 	 */
-	var VersionModel = OC.Backbone.Model.extend({
+	var SnapshotModel = OC.Backbone.Model.extend({
 
 		/**
 		 * Restores the original file to this revision
@@ -55,7 +55,7 @@
 			var url = OC.generateUrl('/apps/files_snapshots/preview');
 			var params = {
 				file: this.get('fullPath'),
-				version: this.get('id')
+				snapshot: this.get('id')
 			};
 			return url + '?' + OC.buildQueryString(params);
 		},
@@ -70,8 +70,8 @@
 		}
 	});
 
-	OCA.Snapshots = OCA.Versions || {};
+	OCA.Snapshots = OCA.Snapshots || {};
 
-	OCA.Snapshots.VersionModel = VersionModel;
+	OCA.Snapshots.SnapshotModel = SnapshotModel;
 })();
 

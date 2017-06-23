@@ -1,14 +1,14 @@
 /*
  * Copyright (c) 2015
  *
- * This file is licensed under the Affero General Public License version 3
+ * This file is licensed under the Affero General Public License snapshot 3
  * or later.
  *
  * See the COPYING-README file.
  *
  */
-describe('OCA.Versions.VersionCollection', function() {
-	var VersionCollection = OCA.Versions.VersionCollection;
+describe('OCA.Snapshots.SnapshotCollection', function() {
+	var SnapshotCollection = OCA.Snapshots.SnapshotCollection;
 	var collection, fileInfoModel;
 
 	beforeEach(function() {
@@ -16,7 +16,7 @@ describe('OCA.Versions.VersionCollection', function() {
 			path: '/subdir',
 			name: 'some file.txt'
 		});
-		collection = new VersionCollection();
+		collection = new SnapshotCollection();
 		collection.setFileInfo(fileInfoModel);
 	});
 	it('fetches the next page', function() {
@@ -24,7 +24,7 @@ describe('OCA.Versions.VersionCollection', function() {
 
 		expect(fakeServer.requests.length).toEqual(1);
 		expect(fakeServer.requests[0].url).toEqual(
-			OC.generateUrl('apps/files_versions/ajax/getVersions.php') +
+			OC.generateUrl('apps/files_snapshots/ajax/getSnapshots.php') +
 			'?source=%2Fsubdir%2Fsome%20file.txt&start=0'
 		);
 		fakeServer.requests[0].respond(
@@ -34,13 +34,13 @@ describe('OCA.Versions.VersionCollection', function() {
 				status: 'success',
 				data: {
 					endReached: false,
-					versions: [{
-						version: 10000000,
+					snapshots: [{
+						snapshot: 10000000,
 						size: 123,
 						name: 'some file.txt',
 						fullPath: '/subdir/some file.txt'
 					},{
-						version: 15000000,
+						snapshot: 15000000,
 						size: 150,
 						name: 'some file.txt',
 						path: '/subdir/some file.txt'
@@ -56,7 +56,7 @@ describe('OCA.Versions.VersionCollection', function() {
 
 		expect(fakeServer.requests.length).toEqual(2);
 		expect(fakeServer.requests[1].url).toEqual(
-			OC.generateUrl('apps/files_versions/ajax/getVersions.php') +
+			OC.generateUrl('apps/files_snapshots/ajax/getSnapshots.php') +
 			'?source=%2Fsubdir%2Fsome%20file.txt&start=2'
 		);
 		fakeServer.requests[1].respond(
@@ -66,8 +66,8 @@ describe('OCA.Versions.VersionCollection', function() {
 				status: 'success',
 				data: {
 					endReached: true,
-					versions: [{
-						version: 18000000,
+					snapshots: [{
+						snapshot: 18000000,
 						size: 123,
 						name: 'some file.txt',
 						path: '/subdir/some file.txt'
@@ -89,7 +89,7 @@ describe('OCA.Versions.VersionCollection', function() {
 
 		expect(fakeServer.requests.length).toEqual(1);
 		expect(fakeServer.requests[0].url).toEqual(
-			OC.generateUrl('apps/files_versions/ajax/getVersions.php') +
+			OC.generateUrl('apps/files_snapshots/ajax/getSnapshots.php') +
 			'?source=%2Fsubdir%2Fsome%20file.txt&start=0'
 		);
 		fakeServer.requests[0].respond(
@@ -99,13 +99,13 @@ describe('OCA.Versions.VersionCollection', function() {
 				status: 'success',
 				data: {
 					endReached: false,
-					versions: [{
-						version: 10000000,
+					snapshots: [{
+						snapshot: 10000000,
 						size: 123,
 						name: 'some file.txt',
 						path: '/subdir/some file.txt'
 					},{
-						version: 15000000,
+						snapshot: 15000000,
 						size: 150,
 						name: 'some file.txt',
 						path: '/subdir/some file.txt'
@@ -141,8 +141,8 @@ describe('OCA.Versions.VersionCollection', function() {
 				status: 'success',
 				data: {
 					endReached: true,
-					versions: [{
-						version: 18000000,
+					snapshots: [{
+						snapshot: 18000000,
 						size: 123,
 						name: 'some file.txt',
 						path: '/subdir/some file.txt'

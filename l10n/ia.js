@@ -1,14 +1,14 @@
 OC.L10N.register(
-    "files_versions",
+    "files_snapshots",
     {
     "Could not revert: %s" : "Impossibile reverter: %s",
-    "Versions" : "Versiones",
+    "Snapshots" : "Snapshotes",
     "Failed to revert {file} to revision {timestamp}." : "Il falleva a reverter {file} a revision {timestamp}.",
     "_%n byte_::_%n bytes_" : ["%n byte","%n bytes"],
     "Restore" : "Restaurar",
-    "No earlier versions available" : "Nulle versiones anterior disponibile",
-    "More versions …" : "Plus versiones …",
-    "No versions available" : "Nulle versiones disponibile",
-    "More versions..." : "Plus versiones..."
+    "No earlier snapshots available" : "Nulle snapshotes anterior disponibile",
+    "More snapshots …" : "Plus snapshotes …",
+    "No snapshots available" : "Nulle snapshotes disponibile",
+    "More snapshots..." : "Plus snapshotes..."
 },
 "nplurals=2; plural=(n != 1);");

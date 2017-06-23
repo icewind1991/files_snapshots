@@ -1,6 +1,6 @@
 [
-  "versionmodel.js",
-  "versioncollection.js",
-  "versionstabview.js",
+  "snapshotmodel.js",
+  "snapshotcollection.js",
+  "snapshotstabview.js",
   "filesplugin.js"
 ]

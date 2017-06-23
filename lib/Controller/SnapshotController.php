@@ -2,12 +2,12 @@
 /**
  * @copyright Copyright (c) 2017 Robin Appelman <robin@icewind.nl>
  *
- * @license GNU AGPL version 3 or any later version
+ * @license GNU AGPL snapshot 3 or any later snapshot
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * published by the Free Software Foundation, either snapshot 3 of the
+ * License, or (at your option) any later snapshot.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -31,7 +31,7 @@ use OCP\Files\Folder;
 use OCP\Files\NotFoundException;
 use OCP\IRequest;
 
-class VersionController extends Controller {
+class SnapshotController extends Controller {
 	/** @var SnapshotManager */
 	private $snapshotManager;
 
@@ -62,9 +62,9 @@ class VersionController extends Controller {
 		$path = $node->getPath();
 		$snapshots = $this->snapshotManager->listSnapshotsForFile($path);
 
-		$versions = array_map(function (Snapshot $snapshot) use ($path) {
+		$snapshots = array_map(function (Snapshot $snapshot) use ($path) {
 			return [
-				'version' => $snapshot->getName(),
+				'snapshot' => $snapshot->getName(),
 				'mtime' => $snapshot->getMtime($path),
 				'preview' => '',
 				'mimetype' => \OC::$server->getMimeTypeDetector()->detectPath($path),
@@ -72,12 +72,12 @@ class VersionController extends Controller {
 			];
 		}, $snapshots);
 
-		usort($versions, function ($a, $b) {
+		usort($snapshots, function ($a, $b) {
 			return $b['mtime'] - $a['mtime'];
 		});
 
 		return [
-			'versions' => array_values($versions),
+			'snapshots' => array_values($snapshots),
 			'endReached' => true
 		];
 	}

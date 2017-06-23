@@ -1,8 +1,8 @@
 OC.L10N.register(
-    "files_versions",
+    "files_snapshots",
     {
-    "Versions" : "Տարբերակներ",
+    "Snapshots" : "Տարբերակներ",
     "Restore" : "Վերականգնել",
-    "No other versions available" : "Այլ տարբերակներ չկան"
+    "No other snapshots available" : "Այլ տարբերակներ չկան"
 },
 "nplurals=2; plural=(n != 1);");

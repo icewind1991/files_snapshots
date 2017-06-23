@@ -4,12 +4,12 @@
  *
  * @author Roeland Jago Douma <roeland@famdouma.nl>
  *
- * @license GNU AGPL version 3 or any later version
+ * @license GNU AGPL snapshot 3 or any later snapshot
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * published by the Free Software Foundation, either snapshot 3 of the
+ * License, or (at your option) any later snapshot.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -20,7 +20,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-namespace OCA\Files_Versions\Controller;
+namespace OCA\Files_Snapshots\Controller;
 
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -69,25 +69,25 @@ class PreviewController extends Controller {
 	 * @param string $file
 	 * @param int $x
 	 * @param int $y
-	 * @param string $version
+	 * @param string $snapshot
 	 * @return DataResponse|FileDisplayResponse
 	 */
 	public function getPreview(
 		$file = '',
 		$x = 44,
 		$y = 44,
-		$version = ''
+		$snapshot = ''
 	) {
-		if($file === '' || $version === '' || $x === 0 || $y === 0) {
+		if($file === '' || $snapshot === '' || $x === 0 || $y === 0) {
 			return new DataResponse([], Http::STATUS_BAD_REQUEST);
 		}
 
 		try {
 			$userFolder = $this->rootFolder->getUserFolder($this->userId);
-			/** @var Folder $versionFolder */
-			$versionFolder = $userFolder->getParent()->get('files_versions');
+			/** @var Folder $snapshotFolder */
+			$snapshotFolder = $userFolder->getParent()->get('files_snapshots');
 			$mimeType = $this->mimeTypeDetector->detectPath($file);
-			$file = $versionFolder->get($file.'.v'.$version);
+			$file = $snapshotFolder->get($file.'.v'.$snapshot);
 
 			/** @var File $file */
 			$f = $this->previewManager->getPreview($file, $x, $y, true, IPreview::MODE_FILL, $mimeType);

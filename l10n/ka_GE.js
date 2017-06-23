@@ -1,8 +1,8 @@
 OC.L10N.register(
-    "files_versions",
+    "files_snapshots",
     {
     "Could not revert: %s" : "ვერ მოხერხდა უკან დაბრუნება: %s",
-    "Versions" : "ვერსიები",
+    "Snapshots" : "ვერსიები",
     "Restore" : "აღდგენა"
 },
 "nplurals=1; plural=0;");

@@ -9,7 +9,7 @@
  * @license AGPL-3.0
  *
  * This code is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License, version 3,
+ * it under the terms of the GNU Affero General Public License, snapshot 3,
  * as published by the Free Software Foundation.
  *
  * This program is distributed in the hope that it will be useful,
@@ -17,14 +17,14 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License, version 3,
+ * You should have received a copy of the GNU Affero General Public License, snapshot 3,
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  *
  */
 
-namespace OCA\Files_Versions\Tests\Command;
+namespace OCA\Files_Snapshots\Tests\Command;
 
-use OCA\Files_Versions\Command\Expire;
+use OCA\Files_Snapshots\Command\Expire;
 use Test\TestCase;
 
 /**
@@ -32,7 +32,7 @@ use Test\TestCase;
  *
  * @group DB
  *
- * @package OCA\Files_Versions\Tests\Command
+ * @package OCA\Files_Snapshots\Tests\Command
  */
 class ExpireTest extends TestCase {
 	public function testExpireNonExistingUser() {

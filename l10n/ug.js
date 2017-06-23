@@ -1,7 +1,7 @@
 OC.L10N.register(
-    "files_versions",
+    "files_snapshots",
     {
     "Could not revert: %s" : "ئەسلىگە قايتۇرالمايدۇ: %s",
-    "Versions" : "نەشرى"
+    "Snapshots" : "نەشرى"
 },
 "nplurals=1; plural=0;");

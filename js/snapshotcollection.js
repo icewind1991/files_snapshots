@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2015
  *
- * This file is licensed under the Affero General Public License version 3
+ * This file is licensed under the Affero General Public License snapshot 3
  * or later.
  *
  * See the COPYING-README file.
@@ -10,10 +10,10 @@
 
 (function () {
 	/**
-	 * @memberof OCA.Versions
+	 * @memberof OCA.Snapshots
 	 */
-	var VersionCollection = OC.Backbone.Collection.extend({
-		model: OCA.Snapshots.VersionModel,
+	var SnapshotCollection = OC.Backbone.Collection.extend({
+		model: OCA.Snapshots.SnapshotModel,
 
 		/**
 		 * @var OCA.Files.FileInfoModel
@@ -24,7 +24,7 @@
 		_currentIndex: 0,
 
 		url: function () {
-			var url = OC.generateUrl('/apps/files_snapshots/versions');
+			var url = OC.generateUrl('/apps/files_snapshots/snapshots');
 			var query = {
 				source: this._fileInfo.getFullPath(),
 				start: this._currentIndex
@@ -74,15 +74,15 @@
 
 		parse: function (result) {
 			var fullPath = this._fileInfo.getFullPath();
-			var results = result.versions.map(function (version) {
-				var revision = parseInt(version.mtime, 10);
+			var results = result.snapshots.map(function (snapshot) {
+				var revision = parseInt(snapshot.mtime, 10);
 				return {
-					id: version.version,
+					id: snapshot.snapshot,
 					name: OC.basename(fullPath),
 					fullPath: fullPath,
 					timestamp: revision,
-					size: version.size,
-					mimetype: version.mimetype
+					size: snapshot.size,
+					mimetype: snapshot.mimetype
 				};
 			}.bind(this));
 			this._endReached = result.endReached;
@@ -93,6 +93,6 @@
 
 	OCA.Snapshots = OCA.Snapshots || {};
 
-	OCA.Snapshots.VersionCollection = VersionCollection;
+	OCA.Snapshots.SnapshotCollection = SnapshotCollection;
 })();
 

@@ -5,7 +5,7 @@
 	<licence>AGPL</licence>
 	<author>Robin Appelman</author>
 	<summary>Access filesystem snapshots trough Nextcloud</summary>
-	<description><![CDATA[Allows using filesystem snapshots (from btrfs, zfs, etc) as versions trough the Nextcloud web interface. A full description can be found [in the README](https://github.com/icewind1991/files_snapshots)]]></description>
+	<description><![CDATA[Allows using filesystem snapshots (from btrfs, zfs, etc) as snapshots trough the Nextcloud web interface. A full description can be found [in the README](https://github.com/icewind1991/files_snapshots)]]></description>
 	<version>0.1.1</version>
 	<namespace>Files_Snapshots</namespace>
 	<dependencies>
@@ -17,7 +17,7 @@
 		<admin-section>OCA\Files_Snapshots\Settings\Section</admin-section>
 	</settings>
 
-	<screenshot>https://raw.githubusercontent.com/icewind1991/files_snapshots/master/screenshots/versions.png</screenshot>
+	<screenshot>https://raw.githubusercontent.com/icewind1991/files_snapshots/master/screenshots/snapshots.png</screenshot>
 	<screenshot>https://raw.githubusercontent.com/icewind1991/files_snapshots/master/screenshots/settings.png</screenshot>
 
 	<website>https://github.com/icewind1991/files_snapshots</website>

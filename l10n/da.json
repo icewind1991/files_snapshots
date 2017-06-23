@@ -1,12 +1,12 @@
 { "translations": {
     "Could not revert: %s" : "Kunne ikke genskabe: %s",
-    "Versions" : "Versioner",
+    "Snapshots" : "Snapshoter",
     "Failed to revert {file} to revision {timestamp}." : "Kunne ikke tilbagerulle {file} til den tidligere udgave: {timestamp}.",
     "_%n byte_::_%n bytes_" : ["%n byte","%n bytes"],
     "Restore" : "Gendan",
-    "No earlier versions available" : "Ingen tidligere versioner tilgængelige",
-    "More versions …" : "Flere versioner ...",
-    "No versions available" : "Ingen tilgængelige versioner",
-    "More versions..." : "Flere versioner..."
+    "No earlier snapshots available" : "Ingen tidligere snapshoter tilgængelige",
+    "More snapshots …" : "Flere snapshoter ...",
+    "No snapshots available" : "Ingen tilgængelige snapshoter",
+    "More snapshots..." : "Flere snapshoter..."
 },"pluralForm" :"nplurals=2; plural=(n != 1);"
 }

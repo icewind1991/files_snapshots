@@ -8,7 +8,7 @@
  * @license AGPL-3.0
  *
  * This code is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License, version 3,
+ * it under the terms of the GNU Affero General Public License, snapshot 3,
  * as published by the Free Software Foundation.
  *
  * This program is distributed in the hope that it will be useful,
@@ -16,16 +16,16 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License, version 3,
+ * You should have received a copy of the GNU Affero General Public License, snapshot 3,
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  *
  */
 
 
-namespace OCA\Files_Versions\Tests\Command;
+namespace OCA\Files_Snapshots\Tests\Command;
 
 
-use OCA\Files_Versions\Command\CleanUp;
+use OCA\Files_Snapshots\Command\CleanUp;
 use Test\TestCase;
 use OC\User\Manager;
 use OCP\Files\IRootFolder;
@@ -35,7 +35,7 @@ use OCP\Files\IRootFolder;
  *
  * @group DB
  *
- * @package OCA\Files_Versions\Tests\Command
+ * @package OCA\Files_Snapshots\Tests\Command
  */
 class CleanupTest extends TestCase {
 
@@ -61,21 +61,21 @@ class CleanupTest extends TestCase {
 	}
 
 	/**
-	 * @dataProvider dataTestDeleteVersions
+	 * @dataProvider dataTestDeleteSnapshots
 	 * @param boolean $nodeExists
 	 */
-	public function testDeleteVersions($nodeExists) {
+	public function testDeleteSnapshots($nodeExists) {
 
 		$this->rootFolder->expects($this->once())
 			->method('nodeExists')
-			->with('/testUser/files_versions')
+			->with('/testUser/files_snapshots')
 			->willReturn($nodeExists);
 
 
 		if($nodeExists) {
 			$this->rootFolder->expects($this->once())
 				->method('get')
-				->with('/testUser/files_versions')
+				->with('/testUser/files_snapshots')
 				->willReturn($this->rootFolder);
 			$this->rootFolder->expects($this->once())
 				->method('delete');
@@ -86,10 +86,10 @@ class CleanupTest extends TestCase {
 				->method('delete');
 		}
 
-		$this->invokePrivate($this->cleanup, 'deleteVersions', ['testUser']);
+		$this->invokePrivate($this->cleanup, 'deleteSnapshots', ['testUser']);
 	}
 
-	public function dataTestDeleteVersions() {
+	public function dataTestDeleteSnapshots() {
 		return array(
 			array(true),
 			array(false)
@@ -98,17 +98,17 @@ class CleanupTest extends TestCase {
 
 
 	/**
-	 * test delete versions from users given as parameter
+	 * test delete snapshots from users given as parameter
 	 */
 	public function testExecuteDeleteListOfUsers() {
 		$userIds = ['user1', 'user2', 'user3'];
 
-		$instance = $this->getMockBuilder('OCA\Files_Versions\Command\CleanUp')
-			->setMethods(['deleteVersions'])
+		$instance = $this->getMockBuilder('OCA\Files_Snapshots\Command\CleanUp')
+			->setMethods(['deleteSnapshots'])
 			->setConstructorArgs([$this->rootFolder, $this->userManager])
 			->getMock();
 		$instance->expects($this->exactly(count($userIds)))
-			->method('deleteVersions')
+			->method('deleteSnapshots')
 			->willReturnCallback(function ($user) use ($userIds) {
 				$this->assertTrue(in_array($user, $userIds));
 			});
@@ -129,14 +129,14 @@ class CleanupTest extends TestCase {
 	}
 
 	/**
-	 * test delete versions of all users
+	 * test delete snapshots of all users
 	 */
 	public function testExecuteAllUsers() {
 		$userIds = [];
 		$backendUsers = ['user1', 'user2'];
 
-		$instance = $this->getMockBuilder('OCA\Files_Versions\Command\CleanUp')
-			->setMethods(['deleteVersions'])
+		$instance = $this->getMockBuilder('OCA\Files_Snapshots\Command\CleanUp')
+			->setMethods(['deleteSnapshots'])
 			->setConstructorArgs([$this->rootFolder, $this->userManager])
 			->getMock();
 
@@ -147,7 +147,7 @@ class CleanupTest extends TestCase {
 			->willReturn($backendUsers);
 
 		$instance->expects($this->exactly(count($backendUsers)))
-			->method('deleteVersions')
+			->method('deleteSnapshots')
 			->willReturnCallback(function ($user) use ($backendUsers) {
 				$this->assertTrue(in_array($user, $backendUsers));
 			});

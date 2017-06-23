@@ -1,18 +1,18 @@
 /*
  * Copyright (c) 2015
  *
- * This file is licensed under the Affero General Public License version 3
+ * This file is licensed under the Affero General Public License snapshot 3
  * or later.
  *
  * See the COPYING-README file.
  *
  */
-describe('OCA.Versions.VersionModel', function() {
-	var VersionModel = OCA.Versions.VersionModel;
+describe('OCA.Snapshots.SnapshotModel', function() {
+	var SnapshotModel = OCA.Snapshots.SnapshotModel;
 	var model;
 
 	beforeEach(function() {
-		model = new VersionModel({
+		model = new SnapshotModel({
 			id: 10000000,
 			timestamp: 10000000,
 			fullPath: '/subdir/some file.txt',
@@ -26,13 +26,13 @@ describe('OCA.Versions.VersionModel', function() {
 	});
 	it('returns the preview url', function() {
 		expect(model.getPreviewUrl())
-			.toEqual(OC.generateUrl('/apps/files_versions/preview') +
-					'?file=%2Fsubdir%2Fsome%20file.txt&version=10000000'
+			.toEqual(OC.generateUrl('/apps/files_snapshots/preview') +
+					'?file=%2Fsubdir%2Fsome%20file.txt&snapshot=10000000'
 			);
 	});
 	it('returns the download url', function() {
 		expect(model.getDownloadUrl())
-			.toEqual(OC.generateUrl('/apps/files_versions/download.php') +
+			.toEqual(OC.generateUrl('/apps/files_snapshots/download.php') +
 					'?file=%2Fsubdir%2Fsome%20file.txt&revision=10000000'
 			);
 	});
@@ -57,7 +57,7 @@ describe('OCA.Versions.VersionModel', function() {
 			expect(fakeServer.requests.length).toEqual(1);
 			expect(fakeServer.requests[0].url)
 				.toEqual(
-					OC.generateUrl('/apps/files_versions/ajax/rollbackVersion.php') +
+					OC.generateUrl('/apps/files_snapshots/ajax/rollbackSnapshot.php') +
 					'?file=%2Fsubdir%2Fsome+file.txt&revision=10000000'
 				);
 

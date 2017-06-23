@@ -1,11 +1,11 @@
 OC.L10N.register(
-    "files_versions",
+    "files_snapshots",
     {
     "Could not revert: %s" : "Could not revert: %s",
-    "Versions" : "Versions",
+    "Snapshots" : "Snapshots",
     "Failed to revert {file} to revision {timestamp}." : "Failed to revert {file} to revision {timestamp}.",
     "Restore" : "Restore",
-    "More versions..." : "More versions...",
-    "No other versions available" : "No other versions available"
+    "More snapshots..." : "More snapshots...",
+    "No other snapshots available" : "No other snapshots available"
 },
 "nplurals=2; plural=(n != 1);");

@@ -1,69 +1,69 @@
-.versionsTabView .clear-float {
+.snapshotsTabView .clear-float {
 	clear: both;
 }
 
-.versionsTabView li {
+.snapshotsTabView li {
 	width: 100%;
 	cursor: default;
 	height: 56px;
 	float: left;
 	border-bottom: 1px solid rgba(100,100,100,.1);
 }
-.versionsTabView li:last-child {
+.snapshotsTabView li:last-child {
 	border-bottom: none;
 }
 
-.versionsTabView a,
-.versionsTabView div > span {
+.snapshotsTabView a,
+.snapshotsTabView div > span {
 	vertical-align: middle;
 	-ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=50)";
 	filter: alpha(opacity=50);
 	opacity: .5;
 }
 
-.versionsTabView li a{
+.snapshotsTabView li a{
 	padding: 15px 10px 11px;
 }
 
-.versionsTabView a:hover,
-.versionsTabView a:focus {
+.snapshotsTabView a:hover,
+.snapshotsTabView a:focus {
 	-ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=100)";
 	filter: alpha(opacity=100);
 	opacity: 1;
 }
 
-.versionsTabView .preview-container {
+.snapshotsTabView .preview-container {
 	display: inline-block;
   vertical-align: top;
 }
 
-.versionsTabView img {
+.snapshotsTabView img {
 	cursor: pointer;
 	padding-right: 4px;
 }
 
-.versionsTabView img.preview {
+.snapshotsTabView img.preview {
 	cursor: default;
 }
 
-.versionsTabView .version-container {
+.snapshotsTabView .snapshot-container {
 	display: inline-block;
 }
 
-.versionsTabView .versiondate {
+.snapshotsTabView .snapshotdate {
 	min-width: 100px;
 	vertical-align: super;
 }
 
-.versionsTabView .version-details {
+.snapshotsTabView .snapshot-details {
 	text-align: left;
 }
 
-.versionsTabView .version-details > span {
+.snapshotsTabView .snapshot-details > span {
 	padding: 0 10px;
 }
 
-.versionsTabView .revertVersion {
+.snapshotsTabView .revertSnapshot {
 	cursor: pointer;
 	float: right;
 	margin-right: -10px;

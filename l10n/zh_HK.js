@@ -1,6 +1,6 @@
 OC.L10N.register(
-    "files_versions",
+    "files_snapshots",
     {
-    "Versions" : "版本"
+    "Snapshots" : "版本"
 },
 "nplurals=1; plural=0;");

@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2015
  *
- * This file is licensed under the Affero General Public License version 3
+ * This file is licensed under the Affero General Public License snapshot 3
  * or later.
  *
  * See the COPYING-README file.
@@ -17,56 +17,56 @@
 		'<div class="preview-container">' +
 		'<img class="preview" src="{{previewUrl}}" width="44" height="44"/>' +
 		'</div>' +
-		'<div class="version-container">' +
+		'<div class="snapshot-container">' +
 		'<div>' +
-		'<a href="{{downloadUrl}}" class="downloadVersion"><img src="{{downloadIconUrl}}" />' +
-		'<span class="versiondate has-tooltip live-relative-timestamp" data-timestamp="{{millisecondsTimestamp}}" title="{{formattedTimestamp}}">{{relativeTimestamp}}</span>' +
+		'<a href="{{downloadUrl}}" class="downloadSnapshot"><img src="{{downloadIconUrl}}" />' +
+		'<span class="snapshotdate has-tooltip live-relative-timestamp" data-timestamp="{{millisecondsTimestamp}}" title="{{formattedTimestamp}}">{{relativeTimestamp}}</span>' +
 		'</a>' +
 		'</div>' +
 		'{{#hasDetails}}' +
-		'<div class="version-details">' +
+		'<div class="snapshot-details">' +
 		'<span class="size has-tooltip" title="{{altSize}}">{{humanReadableSize}}</span>' +
 		'</div>' +
 		'{{/hasDetails}}' +
 		'</div>' +
 		'{{#canRevert}}' +
-		'<a href="#" class="revertVersion" title="{{revertLabel}}"><img src="{{revertIconUrl}}" /></a>' +
+		'<a href="#" class="revertSnapshot" title="{{revertLabel}}"><img src="{{revertIconUrl}}" /></a>' +
 		'{{/canRevert}}' +
 		'</div>' +
 		'</li>';
 
 	var TEMPLATE =
-		'<ul class="versions"></ul>' +
+		'<ul class="snapshots"></ul>' +
 		'<div class="clear-float"></div>' +
 		'<div class="empty hidden">' +
 		'<div class="emptycontent">' +
 		'<div class="icon-history"></div>' +
 		'<p>{{emptyResultLabel}}</p>' +
 		'</div></div>' +
-		'<input type="button" class="showMoreVersions hidden" value="{{moreVersionsLabel}}"' +
-		' name="show-more-versions" id="show-more-versions" />' +
+		'<input type="button" class="showMoreSnapshots hidden" value="{{moreSnapshotsLabel}}"' +
+		' name="show-more-snapshots" id="show-more-snapshots" />' +
 		'<div class="loading hidden" style="height: 50px"></div>';
 
 	/**
-	 * @memberof OCA.Versions
+	 * @memberof OCA.Snapshots
 	 */
-	var VersionsTabView = OCA.Files.DetailTabView.extend(
-		/** @lends OCA.Snapshots.VersionsTabView.prototype */ {
-		id: 'versionsTabView',
-		className: 'tab versionsTabView',
+	var SnapshotsTabView = OCA.Files.DetailTabView.extend(
+		/** @lends OCA.Snapshots.SnapshotsTabView.prototype */ {
+		id: 'snapshotsTabView',
+		className: 'tab snapshotsTabView',
 
 		_template: null,
 
-		$versionsContainer: null,
+		$snapshotsContainer: null,
 
 		events: {
-			'click .revertVersion': '_onClickRevertVersion',
-			'click .showMoreVersions': '_onClickShowMoreVersions'
+			'click .revertSnapshot': '_onClickRevertSnapshot',
+			'click .showMoreSnapshots': '_onClickShowMoreSnapshots'
 		},
 
 		initialize: function() {
 			OCA.Files.DetailTabView.prototype.initialize.apply(this, arguments);
-			this.collection = new OCA.Snapshots.VersionCollection();
+			this.collection = new OCA.Snapshots.SnapshotCollection();
 			this.collection.on('request', this._onRequest, this);
 			this.collection.on('sync', this._onEndRequest, this);
 			this.collection.on('update', this._onUpdate, this);
@@ -75,7 +75,7 @@
 		},
 
 		getLabel: function() {
-			return t('files_versions', 'Versions');
+			return t('files_snapshots', 'Snapshots');
 		},
 
 		nextPage: function() {
@@ -89,12 +89,12 @@
 			this.collection.fetchNext();
 		},
 
-		_onClickShowMoreVersions: function(ev) {
+		_onClickShowMoreSnapshots: function(ev) {
 			ev.preventDefault();
 			this.nextPage();
 		},
 
-		_onClickRevertVersion: function(ev) {
+		_onClickRevertSnapshot: function(ev) {
 			var self = this;
 			var $target = $(ev.target);
 			var fileInfoModel = this.collection.getFileInfo();
@@ -106,37 +106,37 @@
 			ev.preventDefault();
 			revision = $target.attr('data-revision');
 
-			this.$el.find('.versions, .showMoreVersions').addClass('hidden');
+			this.$el.find('.snapshots, .showMoreSnapshots').addClass('hidden');
 
-			var versionModel = this.collection.get(revision);
-			versionModel.revert({
+			var snapshotModel = this.collection.get(revision);
+			snapshotModel.revert({
 				success: function() {
 					// reset and re-fetch the updated collection
-					self.$versionsContainer.empty();
+					self.$snapshotsContainer.empty();
 					self.collection.setFileInfo(fileInfoModel);
 					self.collection.reset([], {silent: true});
 					self.collection.fetchNext();
 
-					self.$el.find('.versions').removeClass('hidden');
+					self.$el.find('.snapshots').removeClass('hidden');
 
 					// update original model
 					fileInfoModel.trigger('busy', fileInfoModel, false);
 					fileInfoModel.set({
-						size: versionModel.get('size'),
-						mtime: versionModel.get('timestamp') * 1000,
+						size: snapshotModel.get('size'),
+						mtime: snapshotModel.get('timestamp') * 1000,
 						// temp dummy, until we can do a PROPFIND
-						etag: versionModel.get('id') + versionModel.get('timestamp')
+						etag: snapshotModel.get('id') + snapshotModel.get('timestamp')
 					});
 				},
 
 				error: function() {
 					fileInfoModel.trigger('busy', fileInfoModel, false);
-					self.$el.find('.versions').removeClass('hidden');
+					self.$el.find('.snapshots').removeClass('hidden');
 					self._toggleLoading(false);
-					OC.Notification.show(t('files_version', 'Failed to revert {file} to revision {timestamp}.', 
+					OC.Notification.show(t('files_snapshot', 'Failed to revert {file} to revision {timestamp}.', 
 						{
-							file: versionModel.getFullPath(),
-							timestamp: OC.Util.formatDate(versionModel.get('timestamp') * 1000)
+							file: snapshotModel.getFullPath(),
+							timestamp: OC.Util.formatDate(snapshotModel.get('timestamp') * 1000)
 						}),
 						{
 							type: 'error'
@@ -157,18 +157,18 @@
 
 		_onRequest: function() {
 			this._toggleLoading(true);
-			this.$el.find('.showMoreVersions').addClass('hidden');
+			this.$el.find('.showMoreSnapshots').addClass('hidden');
 		},
 
 		_onEndRequest: function() {
 			this._toggleLoading(false);
 			this.$el.find('.empty').toggleClass('hidden', !!this.collection.length);
-			this.$el.find('.showMoreVersions').toggleClass('hidden', !this.collection.hasMoreResults());
+			this.$el.find('.showMoreSnapshots').toggleClass('hidden', !this.collection.hasMoreResults());
 		},
 
 		_onAddModel: function(model) {
 			var $el = $(this.itemTemplate(this._formatItem(model)));
-			this.$versionsContainer.append($el);
+			this.$snapshotsContainer.append($el);
 
 			var preview = $el.find('.preview')[0];
 			this._lazyLoadPreview({
@@ -209,22 +209,22 @@
 			}
 		},
 
-		_formatItem: function(version) {
-			var timestamp = version.get('timestamp') * 1000;
-			var size = version.has('size') ? version.get('size') : 0;
+		_formatItem: function(snapshot) {
+			var timestamp = snapshot.get('timestamp') * 1000;
+			var size = snapshot.has('size') ? snapshot.get('size') : 0;
 			return _.extend({
 				millisecondsTimestamp: timestamp,
 				formattedTimestamp: OC.Util.formatDate(timestamp),
 				relativeTimestamp: OC.Util.relativeModifiedDate(timestamp),
 				humanReadableSize: OC.Util.humanFileSize(size, true),
 				altSize: n('files', '%n byte', '%n bytes', size),
-				hasDetails: version.has('size'),
-				downloadUrl: version.getDownloadUrl(),
+				hasDetails: snapshot.has('size'),
+				downloadUrl: snapshot.getDownloadUrl(),
 				downloadIconUrl: OC.imagePath('core', 'actions/download'),
 				revertIconUrl: OC.imagePath('core', 'actions/history'),
-				revertLabel: t('files_versions', 'Restore'),
+				revertLabel: t('files_snapshots', 'Restore'),
 				canRevert: (this.collection.getFileInfo().get('permissions') & OC.PERMISSION_UPDATE) !== 0
-			}, version.attributes);
+			}, snapshot.attributes);
 		},
 
 		/**
@@ -232,11 +232,11 @@
 		 */
 		render: function() {
 			this.$el.html(this.template({
-				emptyResultLabel: t('files_versions', 'No earlier versions available'),
-				moreVersionsLabel: t('files_versions', 'More versions …')
+				emptyResultLabel: t('files_snapshots', 'No earlier snapshots available'),
+				moreSnapshotsLabel: t('files_snapshots', 'More snapshots …')
 			}));
 			this.$el.find('.has-tooltip').tooltip();
-			this.$versionsContainer = this.$el.find('ul.versions');
+			this.$snapshotsContainer = this.$el.find('ul.snapshots');
 			this.delegateEvents();
 		},
 
@@ -287,5 +287,5 @@
 
 	OCA.Snapshots = OCA.Snapshots || {};
 
-	OCA.Snapshots.VersionsTabView = VersionsTabView;
+	OCA.Snapshots.SnapshotsTabView = SnapshotsTabView;
 })();
