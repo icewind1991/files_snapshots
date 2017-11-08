@@ -76,6 +76,13 @@ class Snapshot {
 	}
 
 	public function getSnapshotDate() {
+		$info_file = realpath($this->path.'/../info.xml');
+		if (is_readable($info_file) && function_exists('simplexml_load_string') && function_exists('libxml_disable_entity_loader')) {
+			$dateFormat = "Y-m-d H:i:s";
+			$xml = simplexml_load_file($info_file);
+			$date = \DateTime::createFromFormat($dateFormat, $xml->date);
+			return $date;
+		}
 		return \DateTime::createFromFormat('*' . $this->dateFormat . '*', $this->getName() . '*');
 	}
 
