@@ -9,7 +9,7 @@
 	<version>0.1.2</version>
 	<namespace>Files_Snapshots</namespace>
 	<dependencies>
-		<nextcloud min-version="12" max-version="14" />
+		<nextcloud min-version="14" max-version="16" />
 	</dependencies>
 
 	<settings>

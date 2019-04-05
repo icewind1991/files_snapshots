@@ -1,34 +1,17 @@
-/*
- * Copyright (c) 2015
- *
- * This file is licensed under the Affero General Public License version 3
- * or later.
- *
- * See the COPYING-README file.
- *
- */
+import {VersionsTabView} from './versionstabview';
 
-(function() {
-	OCA.Snapshots = OCA.Snapshots || {};
-
+export class FilesPlugin {
 	/**
-	 * @namespace
+	 * Initialize the versions plugin.
+	 *
+	 * @param {OCA.Files.FileList} fileList file list to be extended
 	 */
-	OCA.Snapshots.Util = {
-		/**
-		 * Initialize the versions plugin.
-		 *
-		 * @param {OCA.Files.FileList} fileList file list to be extended
-		 */
-		attach: function(fileList) {
-			if (fileList.id === 'trashbin' || fileList.id === 'files.public') {
-				return;
-			}
-
-			fileList.registerTabView(new OCA.Snapshots.VersionsTabView('snapshotsTabView', {order: -10}));
+	attach(fileList) {
+		if (fileList.id === 'trashbin' || fileList.id === 'files.public') {
+			return;
 		}
-	};
-})();
 
-OC.Plugins.register('OCA.Files.FileList', OCA.Snapshots.Util);
+		fileList.registerTabView(new VersionsTabView('snapshotsTabView', {order: -10}));
+	}
+}
 

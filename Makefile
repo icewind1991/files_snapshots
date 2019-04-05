@@ -4,7 +4,12 @@ build_dir=$(CURDIR)/build/artifacts
 sign_dir=$(build_dir)/sign
 cert_dir=$(HOME)/.nextcloud/certificates
 
-all: appstore
+sources=$(wildcard src/*.js) $(wildcard src/*/*.js) webpack.config.js
+
+all: js/files_versions.js
+
+js/files_versions.js: $(sources)
+	node_modules/.bin/webpack --mode production --progress --hide-modules --config webpack.config.js
 
 clean:
 	rm -rf $(build_dir)
