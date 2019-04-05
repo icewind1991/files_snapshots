@@ -28,6 +28,10 @@ export const VersionsTabView = OCA.Files.DetailTabView.extend(
 		return t('files_versions', 'Versions');
 	},
 
+	getIcon: function() {
+		return 'icon-history';
+	},
+
 	nextPage: function() {
 		if (this._loading || !this.collection.hasMoreResults()) {
 			return;

@@ -6,21 +6,22 @@ cert_dir=$(HOME)/.nextcloud/certificates
 
 sources=$(wildcard src/*.js) $(wildcard src/*/*.js) webpack.config.js
 
-all: js/files_versions.js
+all: build/files_versions.js
 
-js/files_versions.js: $(sources)
+build/files_versions.js: $(sources)
 	node_modules/.bin/webpack --mode production --progress --hide-modules --config webpack.config.js
 
 clean:
 	rm -rf $(build_dir)
 
-appstore: clean
+appstore: clean build/files_versions.js
 	mkdir -p $(sign_dir)
 	rsync -a \
 	--exclude=.git \
-	--exclude=build \
+	--exclude=build/artifacts \
 	--exclude=.gitignore \
 	--exclude=Makefile \
+	--exclude=node_modules \
 	--exclude=screenshots \
 	--exclude=phpunit*xml \
 	$(project_dir) $(sign_dir)
