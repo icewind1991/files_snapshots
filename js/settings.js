@@ -2,6 +2,7 @@ $(document).ready(function () {
 	var form = $('#files_snapshots');
 	var format = $('#format');
 	var dateFormat = $('#date_format');
+    var userFormat = $('#user_format');
 	var resultTable = $('table.result');
 	var resultBody = $('table.result tbody');
 	var loading = $('div.loading');
@@ -9,7 +10,8 @@ $(document).ready(function () {
 		event.preventDefault();
 		$.post(OC.generateUrl('apps/files_snapshots/settings/save'), {
 			snapshotFormat: format.val(),
-			dateFormat: dateFormat.val()
+			dateFormat: dateFormat.val(),
+			userFormat: userFormat.val()
 		});
 	});
 
@@ -18,7 +20,8 @@ $(document).ready(function () {
 		loading.removeClass('hidden');
 		$.post(OC.generateUrl('apps/files_snapshots/settings/test'), {
 			snapshotFormat: format.val(),
-			dateFormat: dateFormat.val()
+			dateFormat: dateFormat.val(),
+			userFormat: userFormat.val()
 		}).then(function (snapshots) {
 			resultBody.empty();
 			if (snapshots.length < 1) {
@@ -28,7 +31,8 @@ $(document).ready(function () {
 					if (snapshots.hasOwnProperty(snap)) {
 						var row = $('<tr/>');
 						row.append($('<td/>').text(snap));
-						row.append($('<td/>').text(snapshots[snap]));
+						row.append($('<td/>').text(snapshots[snap][0]));
+                        row.append($('<td/>').text(snapshots[snap][1]));
 						resultBody.append(row);
 					}
 				}
@@ -40,5 +44,6 @@ $(document).ready(function () {
 
 	format.on('input', testSettings);
 	dateFormat.on('input', testSettings);
+	userFormat.on('input', testSettings);
 	testSettings();
 });

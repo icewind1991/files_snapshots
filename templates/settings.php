@@ -27,6 +27,14 @@ style('files_snapshots', 'settings');
 				<input id="date_format" value="<?php p($_['date_format']) ?>"/>
 			</td>
 		</tr>
+        <tr>
+            <td>
+                <label for="user_format">User format</label>
+            </td>
+            <td>
+                <input id="user_format" value="<?php p($_['user_format']) ?>"/>
+            </td>
+        </tr>
 		<tr>
 			<td>
 				<input type="submit" value="Save"/>
@@ -41,6 +49,7 @@ style('files_snapshots', 'settings');
 		<tr>
 			<th><?php p($l->t('Snapshot')); ?></th>
 			<th><?php p($l->t('Date')); ?></th>
+            <th><?php p($l->t('User')); ?></th>
 		</tr>
 		</thead>
 		<tbody>

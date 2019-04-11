@@ -48,10 +48,11 @@ class AdminController extends Controller {
 	/**
 	 * @param string $snapshotFormat
 	 * @param string $dateFormat
+     * @param string $userFormat
 	 * @return array
 	 */
-	public function testSettings($snapshotFormat, $dateFormat) {
-		$manager = new SnapshotManager($snapshotFormat, $dateFormat);
+	public function testSettings($snapshotFormat, $dateFormat, $userFormat) {
+		$manager = new SnapshotManager($snapshotFormat, $dateFormat, $userFormat);
 		$snapshots = iterator_to_array($manager->listAllSnapshots());
 		usort($snapshots, function (Snapshot $a, Snapshot $b) {
 			return strcmp($a->getName(), $b->getName());
@@ -61,21 +62,25 @@ class AdminController extends Controller {
 			return $snapshot->getName();
 		}, $snapshots);
 
-		$dates = array_map(function (Snapshot $snapshot) use ($dateFormat) {
+		$datesandusers = array_map(function (Snapshot $snapshot) /*use ($dateFormat)*/ {
 			$date = $snapshot->getSnapshotDate();
-			return $date ? $date->format('Y-m-d H:i:s') : null;
+			$date = $date ? $date->format('Y-m-d H:i:s') : null;
+			return array($date,$snapshot->getUser());
 		}, $snapshots);
 
-		return array_combine($names, $dates);
+
+		return array_combine($names, $datesandusers);
 	}
 
 	/**
 	 * @param string $snapshotFormat
 	 * @param string $dateFormat
+     * @param string $userFormat
 	 */
-	public function save($snapshotFormat, $dateFormat) {
+	public function save($snapshotFormat, $dateFormat, $userFormat) {
 		$this->config->setAppValue('files_snapshots', 'snap_format', $snapshotFormat);
 		$this->config->setAppValue('files_snapshots', 'date_format', $dateFormat);
+        $this->config->setAppValue('files_snapshots', 'user_format', $userFormat);
 		return [$snapshotFormat];
 	}
 }
