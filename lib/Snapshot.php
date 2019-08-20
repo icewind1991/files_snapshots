@@ -76,7 +76,7 @@ class Snapshot {
 	}
 
 	public function getSnapshotDate() {
-		return \DateTime::createFromFormat('*' . $this->dateFormat . '*', $this->getName() . '*');
+		return \DateTime::createFromFormat($this->dateFormat, $this->getName());
 	}
 
 	public function readFile($file) {
