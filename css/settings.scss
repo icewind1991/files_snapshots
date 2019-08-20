@@ -1,20 +1,17 @@
 #files_snapshots {
-  table.settings {
-    width: 100%;
-    margin-bottom: 3em;
+  label span {
+      display: inline-block;
+      min-width: 175px;
+      padding: 8px 0px;
+      vertical-align: top;
+  }
 
-    td:first-child {
-      width: 200px;
-    }
+  input[type='text'] {
+    width: 400px;
+  }
 
-    td:nth-child(2) input {
-      width: 400px;
-      max-width: calc(100% - 10px);
-    }
-
-    input[type=submit] {
-      width: 100px;
-    }
+  div.settings {
+    margin-bottom: 30px;
   }
 
   table.result {
