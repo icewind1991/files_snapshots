@@ -24,5 +24,11 @@ In order to access snapshots, two things need to be configured under the admin s
   and `/srv/http` is a folder which is being snapshoted to `/srv/http/.zfs/snapshot`.
    
 - snapshot folder date format: How the snapshot date is formatted in the snapshot name
+
+  Specifications about the format: http://php.net/manual/de/datetime.createfromformat.php
   
-  example: `Y-m-d_H:i:s` will correctly match snapshots named `autosnap_2017-05-27_00:00:01_hourly`
+  Example: `Y-m-d_H:i:s` will correctly match snapshots named `autosnap_2017-05-27_00:00:01_hourly`
+  
+  Hint: Each * will only match until the next separator or digit, a * at the end and at beginning are added by the script automatical
+  
+  Example: `-*-*-Y-m-d-Hi`  will correctly match snapshots named `zfs-auto-snap_frequent-2017-06-23-1930`
