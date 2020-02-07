@@ -55,14 +55,16 @@ class SnapshotManager {
 		if ($this->snapshotPrefix === null) {
 			return;
 		}
-		$dh = opendir($this->snapshotPrefix);
-		while ($file = readdir($dh)) {
-			$path = $this->snapshotPrefix . '/' . $file;
-			if ($file[0] !== '.' && is_dir($path) && is_dir($path . '/' . $this->snapshotPostfix)) {
-				yield new Snapshot($path . '/' . $this->snapshotPostfix, $file, $this->dateFormat);
+		foreach(glob($this->snapshotPrefix, GLOB_ONLYDIR) as $dir) {
+			$dh = opendir($dir);
+			while ($file = readdir($dh)) {
+				$path = $dir . '/' . $file;
+				if ($file[0] !== '.' && is_dir($path) && is_dir($path . '/' . $this->snapshotPostfix)) {
+					yield new Snapshot($path . '/' . $this->snapshotPostfix, $file, $this->dateFormat);
+				}
 			}
+			closedir($dh);
 		}
-		closedir($dh);
 	}
 
 	/**
