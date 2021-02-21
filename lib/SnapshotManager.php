@@ -21,7 +21,6 @@
 
 namespace OCA\Files_Snapshots;
 
-
 class SnapshotManager {
 	/** @var string */
 	private $snapshotFormat;
@@ -45,7 +44,7 @@ class SnapshotManager {
 		$this->snapshotFormat = $snapshotFormat;
 		$this->dateFormat = $dateFormat;
 
-		list($this->snapshotPrefix, $this->snapshotPostfix) = explode('/%snapshot%/', $snapshotFormat);
+		[$this->snapshotPrefix, $this->snapshotPostfix] = explode('/%snapshot%/', $snapshotFormat);
 	}
 
 	/**
@@ -68,7 +67,7 @@ class SnapshotManager {
 	 */
 	public function listSnapshotsForFile($file) {
 		$lastMtime = 0;
-		$allSnapshots = array_filter(iterator_to_array($this->listAllSnapshots()), function(Snapshot $snapshot) {
+		$allSnapshots = array_filter(iterator_to_array($this->listAllSnapshots()), function (Snapshot $snapshot) {
 			return $snapshot->getSnapshotDate() instanceof \DateTime;
 		});
 

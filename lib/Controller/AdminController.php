@@ -21,7 +21,6 @@
 
 namespace OCA\Files_Snapshots\Controller;
 
-
 use OCA\Files_Snapshots\Snapshot;
 use OCA\Files_Snapshots\SnapshotManager;
 use OCP\AppFramework\Controller;
@@ -36,9 +35,9 @@ class AdminController extends Controller {
 	private $config;
 
 	public function __construct($appName,
-	                            IRequest $request,
-	                            SnapshotManager $snapshotManager,
-	                            IConfig $config
+								IRequest $request,
+								SnapshotManager $snapshotManager,
+								IConfig $config
 	) {
 		parent::__construct($appName, $request);
 		$this->snapshotManager = $snapshotManager;

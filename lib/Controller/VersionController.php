@@ -21,7 +21,6 @@
 
 namespace OCA\Files_Snapshots\Controller;
 
-
 use OCA\Files_Snapshots\DownloadResponse;
 use OCA\Files_Snapshots\Snapshot;
 use OCA\Files_Snapshots\SnapshotManager;
@@ -39,9 +38,9 @@ class VersionController extends Controller {
 	private $userFolder;
 
 	public function __construct($appName,
-	                            IRequest $request,
-	                            SnapshotManager $snapshotManager,
-	                            Folder $userFolder
+								IRequest $request,
+								SnapshotManager $snapshotManager,
+								Folder $userFolder
 	) {
 		parent::__construct($appName, $request);
 		$this->snapshotManager = $snapshotManager;

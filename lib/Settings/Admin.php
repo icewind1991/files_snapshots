@@ -21,13 +21,9 @@
 
 namespace OCA\Files_Snapshots\Settings;
 
-use OCA\User_LDAP\Configuration;
-use OCA\User_LDAP\Helper;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\IConfig;
-use OCP\IL10N;
 use OCP\Settings\ISettings;
-use OCP\Template;
 
 class Admin implements ISettings {
 	/** @var IConfig */

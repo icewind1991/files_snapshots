@@ -47,7 +47,7 @@ class DownloadResponse extends Response implements ICallbackResponse {
 	 * @param array $headers
 	 */
 	public function __construct($stream, $length, $name, $lastModified, $mimeType, $statusCode = Http::STATUS_OK,
-	                            $headers = []) {
+								$headers = []) {
 		$this->stream = $stream;
 		$this->setStatus($statusCode);
 		$this->setHeaders(array_merge($this->getHeaders(), $headers));

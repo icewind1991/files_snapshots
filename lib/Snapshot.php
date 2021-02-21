@@ -21,7 +21,6 @@
 
 namespace OCA\Files_Snapshots;
 
-
 class Snapshot {
 	/** @var string */
 	private $path;
