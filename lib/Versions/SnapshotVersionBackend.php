@@ -65,8 +65,12 @@ class SnapshotVersionBackend implements IVersionBackend {
 		$source = $version->getSourceFile();
 		$storage = $source->getStorage();
 
-		$versionStorage = new Local(['datadir' => '/']);
-		return $storage->copyFromStorage($versionStorage, $version->getVersionPath(), $source->getInternalPath());
+		if ($version instanceof SnapshotVersion) {
+			$versionStorage = new Local(['datadir' => $version->getSnapshot()->getPath()]);
+			return $storage->copyFromStorage($versionStorage, $version->getVersionPath(), $source->getInternalPath());
+		} else {
+			return false;
+		}
 	}
 
 	public function read(IVersion $version) {
