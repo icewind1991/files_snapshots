@@ -21,7 +21,6 @@
 
 namespace OCA\Files_Snapshots;
 
-use OCP\IConfig;
 use Traversable;
 
 class SnapshotManager {
