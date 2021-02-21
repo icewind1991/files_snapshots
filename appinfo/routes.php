@@ -34,20 +34,5 @@ $application->registerRoutes($this, [
 			'url' => '/settings/save',
 			'verb' => 'POST',
 		],
-		[
-			'name' => 'Version#get',
-			'url' => '/versions',
-			'verb' => 'GET',
-		],
-		[
-			'name' => 'Version#download',
-			'url' => '/download',
-			'verb' => 'GET',
-		],
-		[
-			'name' => 'Version#rollback',
-			'url' => '/rollback',
-			'verb' => 'GET',
-		]
 	],
 ]);

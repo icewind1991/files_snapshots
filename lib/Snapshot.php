@@ -21,6 +21,8 @@
 
 namespace OCA\Files_Snapshots;
 
+use DateTime;
+
 class Snapshot {
 	/** @var string */
 	private $path;
@@ -38,47 +40,46 @@ class Snapshot {
 	 * @param string $name
 	 * @param string $dateFormat
 	 */
-	public function __construct($path, $name, $dateFormat) {
+	public function __construct(string $path, string $name, string $dateFormat) {
 		$this->path = rtrim($path, '/');
 		$this->name = $name;
 		$this->dateFormat = $dateFormat;
 	}
 
-	/**
-	 * @return string
-	 */
-	public function getPath() {
+	public function getPath(): string {
 		return $this->path;
 	}
 
-	/**
-	 * @return string
-	 */
-	public function getName() {
+	public function getName(): string {
 		return $this->name;
 	}
 
-	public function getFilePath($file) {
+	public function getFilePath($file): string {
 		return $this->path . '/' . $file;
 	}
 
-	public function hasFile($file) {
+	public function hasFile($file): bool {
 		return file_exists($this->getFilePath($file));
 	}
 
-	public function getMtime($file) {
+	public function getMtime($file): int {
 		return filemtime($this->getFilePath($file));
 	}
 
-	public function getSize($file) {
+	public function getSize($file): int {
 		return filesize($this->getFilePath($file));
 	}
 
-	public function getSnapshotDate() {
-		return \DateTime::createFromFormat($this->dateFormat, $this->getName());
+	public function getSnapshotDate(): ?DateTime {
+		$date = DateTime::createFromFormat($this->dateFormat, $this->getName());
+		return ($date) ? $date : null;
 	}
 
-	public function readFile($file) {
+	/**
+	 * @param string $file
+	 * @return resource|false
+	 */
+	public function readFile(string $file) {
 		return fopen($this->getFilePath($file), 'r');
 	}
 }

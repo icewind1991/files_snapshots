@@ -21,6 +21,9 @@
 
 namespace OCA\Files_Snapshots;
 
+use OCP\IConfig;
+use Traversable;
+
 class SnapshotManager {
 	/** @var string */
 	private $snapshotFormat;
@@ -44,17 +47,17 @@ class SnapshotManager {
 		$this->snapshotFormat = $snapshotFormat;
 		$this->dateFormat = $dateFormat;
 
-		[$this->snapshotPrefix, $this->snapshotPostfix] = explode('/%snapshot%/', $snapshotFormat);
+		[$this->snapshotPrefix, $this->snapshotPostfix] = explode('/%snapshot%/', $this->snapshotFormat);
 	}
 
 	/**
-	 * @return \Generator|Snapshot[]
+	 * @return Traversable<Snapshot>
 	 */
-	public function listAllSnapshots() {
+	public function listAllSnapshots(): Traversable {
 		$dh = opendir($this->snapshotPrefix);
 		while ($file = readdir($dh)) {
 			$path = $this->snapshotPrefix . '/' . $file;
-			if ($file[0] !== '' && is_dir($path) && is_dir($path . '/' . $this->snapshotPostfix)) {
+			if ($file[0] !== '.' && is_dir($path) && is_dir($path . '/' . $this->snapshotPostfix)) {
 				yield new Snapshot($path . '/' . $this->snapshotPostfix, $file, $this->dateFormat);
 			}
 		}
@@ -65,7 +68,7 @@ class SnapshotManager {
 	 * @param $file
 	 * @return Snapshot[]
 	 */
-	public function listSnapshotsForFile($file) {
+	public function listSnapshotsForFile(string $file): array {
 		$lastMtime = 0;
 		$allSnapshots = array_filter(iterator_to_array($this->listAllSnapshots()), function (Snapshot $snapshot) {
 			return $snapshot->getSnapshotDate() instanceof \DateTime;
@@ -84,7 +87,7 @@ class SnapshotManager {
 		});
 	}
 
-	public function getSnapshot($id) {
+	public function getSnapshot(string $id): ?Snapshot {
 		$path = $path = $this->snapshotPrefix . '/' . $id . '/' . $this->snapshotPostfix;
 		return is_dir($path) ? new Snapshot($path, $id, $this->dateFormat) : null;
 	}

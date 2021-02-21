@@ -9,7 +9,7 @@
 	<version>0.3.0</version>
 	<namespace>Files_Snapshots</namespace>
 	<dependencies>
-		<nextcloud min-version="15" max-version="17" />
+		<nextcloud min-version="20" max-version="21" />
 	</dependencies>
 
 	<settings>
@@ -23,4 +23,8 @@
 	<website>https://github.com/icewind1991/files_snapshots</website>
 	<bugs>https://github.com/icewind1991/files_snapshots/issues</bugs>
 	<repository type="git">https://github.com/icewind1991/files_snapshots.git</repository>
+
+	<versions>
+		<backend for="OC\Files\Storage\Home">OCA\Files_Snapshots\Versions\SnapshotVersionBackend</backend>
+	</versions>
 </info>
