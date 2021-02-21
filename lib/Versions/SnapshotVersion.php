@@ -55,7 +55,7 @@ class SnapshotVersion implements IVersion {
 	}
 
 	public function getTimestamp(): int {
-		return $this->snapshot->getSnapshotDate()->getTimestamp();
+		return $this->snapshot->getMtime($this->getVersionPath());
 	}
 
 	public function getSize(): int {
