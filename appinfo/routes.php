@@ -21,7 +21,8 @@
 
 namespace OCA\Files_Snapshots\AppInfo;
 
-$application = new Application();
+/** @var Application $application */
+$application = \OC::$server->query(Application::class);
 $application->registerRoutes($this, [
 	'routes' => [
 		[
