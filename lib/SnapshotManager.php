@@ -27,32 +27,34 @@ class SnapshotManager {
 	/** @var string */
 	private $snapshotFormat;
 
-	/** @var string */
+	/** @var string|null */
 	private $snapshotPrefix;
 
-	/** @var string */
+	/** @var string|null */
 	private $snapshotPostfix;
 
 	/** @var  string */
 	private $dateFormat;
 
-	/**
-	 * SnapshotManager constructor.
-	 *
-	 * @param string $snapshotFormat
-	 * @param string $dateFormat
-	 */
-	public function __construct($snapshotFormat, $dateFormat) {
+	public function __construct(string $snapshotFormat, string $dateFormat) {
 		$this->snapshotFormat = $snapshotFormat;
 		$this->dateFormat = $dateFormat;
 
-		[$this->snapshotPrefix, $this->snapshotPostfix] = explode('/%snapshot%/', $this->snapshotFormat);
+		if (strpos($this->snapshotFormat, '/%snapshot%/') !== false) {
+			[$this->snapshotPrefix, $this->snapshotPostfix] = explode('/%snapshot%/', $this->snapshotFormat);
+		} else {
+			$this->snapshotPrefix = null;
+			$this->snapshotPostfix = null;
+		}
 	}
 
 	/**
 	 * @return Traversable<Snapshot>
 	 */
 	public function listAllSnapshots(): Traversable {
+		if ($this->snapshotPrefix === null) {
+			return;
+		}
 		$dh = opendir($this->snapshotPrefix);
 		while ($file = readdir($dh)) {
 			$path = $this->snapshotPrefix . '/' . $file;
@@ -68,6 +70,9 @@ class SnapshotManager {
 	 * @return Snapshot[]
 	 */
 	public function listSnapshotsForFile(string $file): array {
+		if ($this->snapshotPrefix === null) {
+			return [];
+		}
 		$lastMtime = 0;
 		$allSnapshots = array_filter(iterator_to_array($this->listAllSnapshots()), function (Snapshot $snapshot) {
 			return $snapshot->getSnapshotDate() instanceof \DateTime;
@@ -87,6 +92,9 @@ class SnapshotManager {
 	}
 
 	public function getSnapshot(string $id): ?Snapshot {
+		if ($this->snapshotPrefix === null) {
+			return null;
+		}
 		$path = $path = $this->snapshotPrefix . '/' . $id . '/' . $this->snapshotPostfix;
 		return is_dir($path) ? new Snapshot($path, $id, $this->dateFormat) : null;
 	}
