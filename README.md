@@ -22,6 +22,17 @@ In order to access snapshots, two things need to be configured under the admin s
   example: `/srv/http/.zfs/snapshot/%snapshot%/nextcloud/data/`  
   where `/srv/http/nextcloud/data` is the Nextcloud data directory  
   and `/srv/http` is a folder which is being snapshoted to `/srv/http/.zfs/snapshot`.
+  
+  Additionally, if your snapshots are organized over multiple directories like
+  
+  ```
+  /.snapshots/hourly/2020-02-07_00:00/...
+  /.snapshots/hourly/2020-02-07_01:00/...
+  /.snapshots/daily/2020-02-06_00:00/...
+  /.snapshots/daily/2020-02-07_00:00/...
+  ```
+
+  you can use a glob such as `/.snapshots/*/%snapshot%/` to make the app search for snapshots in multiple directories.
    
 - snapshot folder date format: How the snapshot date is formatted in the snapshot name
 
