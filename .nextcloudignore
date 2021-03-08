@@ -9,3 +9,5 @@ krankerl.toml
 screenshots
 .nextcloudignore
 tests
+composer.*
+psalm.xml
