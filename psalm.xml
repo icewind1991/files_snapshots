@@ -13,6 +13,6 @@
 		<directory name="vendor/christophwurst/nextcloud"/>
 	</extraFiles>
 	<stubs>
-		<file name="psalm.phpstub"/>
+		<file name="tests/stubs/psalm.phpstub"/>
 	</stubs>
 </psalm>

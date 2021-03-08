@@ -74,21 +74,21 @@ class SnapshotManager {
 			return [];
 		}
 		$lastMtime = 0;
-		$allSnapshots = array_filter(iterator_to_array($this->listAllSnapshots()), function (Snapshot $snapshot) {
-			return $snapshot->getSnapshotDate() instanceof \DateTime;
+		$allSnapshots = array_filter(iterator_to_array($this->listAllSnapshots()), function (Snapshot $snapshot) use ($file) {
+			return $snapshot->getSnapshotDate() instanceof \DateTime && $snapshot->hasFile($file);
 		});
 
 		usort($allSnapshots, function (Snapshot $a, Snapshot $b) {
 			return $a->getSnapshotDate()->getTimestamp() - $b->getSnapshotDate()->getTimestamp();
 		});
-		return array_filter($allSnapshots, function (Snapshot $snapshot) use (&$lastMtime, $file) {
+		return array_values(array_filter($allSnapshots, function (Snapshot $snapshot) use (&$lastMtime, $file) {
 			$snapshotMtime = $snapshot->getMtime($file);
 			if ($snapshotMtime > $lastMtime) {
 				$lastMtime = $snapshotMtime;
 				return true;
 			}
 			return false;
-		});
+		}));
 	}
 
 	public function getSnapshot(string $id): ?Snapshot {
