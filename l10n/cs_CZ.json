@@ -1,6 +1,6 @@
 { "translations": {
-    "files_versions",
-    {
+
+    
     "Could not revert: %s" : "Nelze vrátit: %s",
     "Versions" : "Verze",
     "Failed to revert {file} to revision {timestamp}." : "Nezdařilo se vrácení souboru {file} na verzi {timestamp}.",
