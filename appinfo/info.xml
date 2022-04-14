@@ -6,10 +6,10 @@
 	<author>Robin Appelman</author>
 	<summary>Access filesystem snapshots trough Nextcloud</summary>
 	<description><![CDATA[Allows using filesystem snapshots (from btrfs, zfs, etc) as versions trough the Nextcloud web interface. A full description can be found [in the README](https://github.com/icewind1991/files_snapshots)]]></description>
-	<version>1.0.3</version>
+	<version>1.0.4</version>
 	<namespace>Files_Snapshots</namespace>
 	<dependencies>
-		<nextcloud min-version="21" max-version="23" />
+		<nextcloud min-version="22" max-version="24" />
 	</dependencies>
 
 	<settings>
