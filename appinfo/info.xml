@@ -1,13 +1,24 @@
 <?xml version="1.0"?>
-<info>
+<info xmlns:xsi= "http://www.w3.org/2001/XMLSchema-instance"
+	  xsi:noNamespaceSchemaLocation="https://apps.nextcloud.com/schema/apps/info.xsd">
 	<id>files_snapshots</id>
 	<name>Snapshots</name>
-	<licence>AGPL</licence>
-	<author>Robin Appelman</author>
 	<summary>Access filesystem snapshots trough Nextcloud</summary>
 	<description><![CDATA[Allows using filesystem snapshots (from btrfs, zfs, etc) as versions trough the Nextcloud web interface. A full description can be found [in the README](https://github.com/icewind1991/files_snapshots)]]></description>
 	<version>1.0.5</version>
+	<licence>agpl</licence>
+	<author>Robin Appelman</author>
 	<namespace>Files_Snapshots</namespace>
+
+	<category>files</category>
+
+	<website>https://github.com/icewind1991/files_snapshots</website>
+	<bugs>https://github.com/icewind1991/files_snapshots/issues</bugs>
+	<repository type="git">https://github.com/icewind1991/files_snapshots.git</repository>
+
+	<screenshot>https://raw.githubusercontent.com/icewind1991/files_snapshots/master/screenshots/versions.png</screenshot>
+	<screenshot>https://raw.githubusercontent.com/icewind1991/files_snapshots/master/screenshots/settings.png</screenshot>
+
 	<dependencies>
 		<nextcloud min-version="23" max-version="25" />
 	</dependencies>
@@ -16,13 +27,6 @@
 		<admin>OCA\Files_Snapshots\Settings\Admin</admin>
 		<admin-section>OCA\Files_Snapshots\Settings\Section</admin-section>
 	</settings>
-
-	<screenshot>https://raw.githubusercontent.com/icewind1991/files_snapshots/master/screenshots/versions.png</screenshot>
-	<screenshot>https://raw.githubusercontent.com/icewind1991/files_snapshots/master/screenshots/settings.png</screenshot>
-
-	<website>https://github.com/icewind1991/files_snapshots</website>
-	<bugs>https://github.com/icewind1991/files_snapshots/issues</bugs>
-	<repository type="git">https://github.com/icewind1991/files_snapshots.git</repository>
 
 	<versions>
 		<backend for="OC\Files\Storage\Home">OCA\Files_Snapshots\Versions\SnapshotVersionBackend</backend>
