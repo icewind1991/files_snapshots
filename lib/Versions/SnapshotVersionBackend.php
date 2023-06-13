@@ -28,8 +28,8 @@ use OCA\Files_Snapshots\Snapshot;
 use OCA\Files_Snapshots\SnapshotManager;
 use OCA\Files_Versions\Versions\IVersion;
 use OCA\Files_Versions\Versions\IVersionBackend;
-use OCP\Files\FileInfo;
 use OCP\Files\File;
+use OCP\Files\FileInfo;
 use OCP\Files\Storage\IStorage;
 use OCP\IUser;
 
