@@ -3,7 +3,7 @@
 # https://github.com/nextcloud/.github
 # https://docs.github.com/en/actions/learn-github-actions/sharing-workflows-with-your-organization
 
-name: Lint
+name: Lint php-cs
 
 on: pull_request
 
@@ -22,13 +22,20 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
-      - name: Set up php
-        uses: shivammathur/setup-php@v2
+      - name: Get php version
+        id: versions
+        uses: icewind1991/nextcloud-version-matrix@c2bf575a3516752db5ce2915499d3f694885e2c7 # v1.0.0
+
+      - name: Set up php${{ steps.versions.outputs.php-max }}
+        uses: shivammathur/setup-php@81cd5ae0920b34eef300e1775313071038a53429 # v2
         with:
-          php-version: "8.0"
+          php-version: ${{ steps.versions.outputs.php-max }}
           coverage: none
+          ini-file: development
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install dependencies
         run: composer i
