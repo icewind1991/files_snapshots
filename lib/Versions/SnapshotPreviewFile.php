@@ -319,4 +319,12 @@ class SnapshotPreviewFile implements File, IVersionedPreviewFile {
 	public function getUploadTime(): int {
 		return 0;
 	}
+
+	public function getParentId(): int {
+		return $this->getParent()->getId();
+	}
+
+	public function getMetadata(): array {
+		return [];
+	}
 }
