@@ -63,8 +63,19 @@ class SnapshotManagerTest extends TestCase {
 		mkdir("$basedir/pre1/autosnap_2021-02-23_12:53:43_daily/sub", 0777, true);
 		// snapshot that doesn't match the autosnap date
 		mkdir("$basedir/pre1/non-date-snap/sub", 0777, true);
+		touch("$basedir/pre1/non-date-snap/sub", 1714137760);
 		// snapshots with a different prefix
 		mkdir("$basedir/pre2/autosnap_2021-02-24_12:53:43_daily/sub", 0777, true);
+
+		// snapshots without a date
+		mkdir("$basedir/nodate/snap1/sub", 0777, true);
+		file_put_contents("$basedir/nodate/snap1/sub/test.txt", 'old');
+		touch("$basedir/nodate/snap1/sub/test.txt", 100);
+		touch("$basedir/nodate/snap1/sub", 100);
+		mkdir("$basedir/nodate/snap2/sub", 0777, true);
+		file_put_contents("$basedir/nodate/snap2/sub/test.txt", 'new');
+		touch("$basedir/nodate/snap2/sub/test.txt", 110);
+		touch("$basedir/nodate/snap2/sub", 110);
 	}
 
 	public function testListSnapshotsNotConfigured() {
@@ -87,7 +98,7 @@ class SnapshotManagerTest extends TestCase {
 		$this->assertEquals(DateTime::createFromFormat("Y-m-d_H:i:s", "2021-02-21_20:16:36"), $snapshots[1]->getSnapshotDate());
 		$this->assertEquals(DateTime::createFromFormat("Y-m-d_H:i:s", "2021-02-22_12:53:43"), $snapshots[2]->getSnapshotDate());
 		$this->assertEquals(DateTime::createFromFormat("Y-m-d_H:i:s", "2021-02-23_12:53:43"), $snapshots[3]->getSnapshotDate());
-		$this->assertEquals(null, $snapshots[4]->getSnapshotDate());
+		$this->assertEquals(new DateTime('@1714137760'), $snapshots[4]->getSnapshotDate());
 	}
 
 	public function testListSnapshotsForFile() {
@@ -102,8 +113,18 @@ class SnapshotManagerTest extends TestCase {
 		$this->assertEquals('new', stream_get_contents($snapshots[1]->readFile('test.txt')));
 	}
 
+	public function testListSnapshotsForFileNoDate() {
+		$manager = new SnapshotManager("/" . $this->baseDir . "/nodate/%snapshot%/sub", "*snap*");
+
+		$snapshots = $manager->listSnapshotsForFile("test.txt");
+		$this->assertCount(2, $snapshots);
+
+		$this->assertEquals('old', stream_get_contents($snapshots[0]->readFile('test.txt')));
+		$this->assertEquals('new', stream_get_contents($snapshots[1]->readFile('test.txt')));
+	}
+
 	public function testListSnapshotsGlob() {
-		$manager = new SnapshotManager("/" . $this->baseDir . "/*/%snapshot%/sub", "*Y-m-d_H:i:s*");
+		$manager = new SnapshotManager("/" . $this->baseDir . "/pre*/%snapshot%/sub", "*Y-m-d_H:i:s*");
 
 		/** @var Snapshot[] $snapshots */
 		$snapshots = iterator_to_array($manager->listAllSnapshots());
@@ -115,7 +136,7 @@ class SnapshotManagerTest extends TestCase {
 		$this->assertEquals(DateTime::createFromFormat("Y-m-d_H:i:s", "2021-02-21_20:16:36"), $snapshots[1]->getSnapshotDate());
 		$this->assertEquals(DateTime::createFromFormat("Y-m-d_H:i:s", "2021-02-22_12:53:43"), $snapshots[2]->getSnapshotDate());
 		$this->assertEquals(DateTime::createFromFormat("Y-m-d_H:i:s", "2021-02-23_12:53:43"), $snapshots[3]->getSnapshotDate());
-		$this->assertEquals(null, $snapshots[4]->getSnapshotDate());
 		$this->assertEquals(DateTime::createFromFormat("Y-m-d_H:i:s", "2021-02-24_12:53:43"), $snapshots[5]->getSnapshotDate());
+		$this->assertEquals(new DateTime('@1714137760'), $snapshots[4]->getSnapshotDate());
 	}
 }
