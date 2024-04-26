@@ -77,12 +77,13 @@ class SnapshotManager {
 		}
 		$lastMtime = 0;
 		$allSnapshots = array_filter(iterator_to_array($this->listAllSnapshots()), function (Snapshot $snapshot) use ($file) {
-			return $snapshot->getSnapshotDate() instanceof \DateTime && $snapshot->hasFile($file);
+			return $snapshot->hasFile($file);
 		});
 
 		usort($allSnapshots, function (Snapshot $a, Snapshot $b) {
-			return $a->getSnapshotDate()->getTimestamp() - $b->getSnapshotDate()->getTimestamp();
+			return $a->getSnapshotDate()->getTimestamp() <=> $b->getSnapshotDate()->getTimestamp();
 		});
+		$a = 1;
 		return array_values(array_filter($allSnapshots, function (Snapshot $snapshot) use (&$lastMtime, $file) {
 			$snapshotMtime = $snapshot->getMtime($file);
 			if ($snapshotMtime > $lastMtime) {

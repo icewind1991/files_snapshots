@@ -70,9 +70,14 @@ class Snapshot {
 		return filesize($this->getFilePath($file));
 	}
 
-	public function getSnapshotDate(): ?DateTime {
+	public function getSnapshotDate(): DateTime {
 		$date = DateTime::createFromFormat($this->dateFormat, $this->getName());
-		return ($date) ? $date : null;
+		if (!$date) {
+			$date = new DateTime();
+			$mtime = $this->getMtime('');
+			$date->setTimestamp($mtime);
+		}
+		return $date;
 	}
 
 	/**

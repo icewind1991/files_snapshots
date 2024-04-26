@@ -61,8 +61,7 @@ class AdminController extends Controller {
 		}, $snapshots);
 
 		$dates = array_map(function (Snapshot $snapshot) use ($dateFormat) {
-			$date = $snapshot->getSnapshotDate();
-			return $date ? $date->format('Y-m-d H:i:s') : null;
+			return $snapshot->getSnapshotDate()->format('Y-m-d H:i:s');
 		}, $snapshots);
 
 		return array_combine($names, $dates);
