@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @copyright Copyright (c) 2017 Robin Appelman <robin@icewind.nl>
  *
@@ -33,7 +34,7 @@ class SnapshotManager {
 	/** @var string|null */
 	private $snapshotPostfix;
 
-	/** @var  string */
+	/** @var string */
 	private $dateFormat;
 
 	public function __construct(string $snapshotFormat, string $dateFormat) {

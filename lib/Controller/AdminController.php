@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @copyright Copyright (c) 2017 Robin Appelman <robin@icewind.nl>
  *
@@ -37,7 +38,7 @@ class AdminController extends Controller {
 	public function __construct($appName,
 		IRequest $request,
 		SnapshotManager $snapshotManager,
-		IConfig $config
+		IConfig $config,
 	) {
 		parent::__construct($appName, $request);
 		$this->snapshotManager = $snapshotManager;
