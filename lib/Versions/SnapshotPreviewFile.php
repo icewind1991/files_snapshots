@@ -40,7 +40,7 @@ class SnapshotPreviewFile implements File, IVersionedPreviewFile {
 	}
 
 	public function getContent() {
-		return stream_get_contents(($this->contentProvider)());
+		return (string)stream_get_contents(($this->contentProvider)());
 	}
 
 	public function putContent($data) {
@@ -56,7 +56,7 @@ class SnapshotPreviewFile implements File, IVersionedPreviewFile {
 	}
 
 	public function hash($type, $raw = false) {
-		throw new \Exception("not implemented");
+		throw new \Exception('not implemented');
 	}
 
 	public function getChecksum() {
@@ -202,7 +202,7 @@ class SnapshotPreviewFile implements File, IVersionedPreviewFile {
 	public function getId() {
 		$id = $this->sourceFile->getId();
 		if ($id === null) {
-			throw new \Exception("invalid source file");
+			throw new \Exception('invalid source file');
 		} else {
 			return $id;
 		}
@@ -274,7 +274,7 @@ class SnapshotPreviewFile implements File, IVersionedPreviewFile {
 		if ($this->sourceFile instanceof File) {
 			return $this->sourceFile->getParent();
 		} else {
-			throw new \Exception("invalid source file");
+			throw new \Exception('invalid source file');
 		}
 	}
 

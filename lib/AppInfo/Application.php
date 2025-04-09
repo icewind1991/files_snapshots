@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @copyright Copyright (c) 2017 Robin Appelman <robin@icewind.nl>
  *
