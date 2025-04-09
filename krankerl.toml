@@ -1,4 +1,4 @@
 [package]
 before_cmds = [
-
+	"composer dump-autoload -a"
 ]

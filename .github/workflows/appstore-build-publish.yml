@@ -105,12 +105,6 @@ jobs:
           cd ${{ env.APP_NAME }}
           composer install --no-dev
 
-      - name: Regenerate autoloader with authoritative class maps.
-        if: steps.check_composer.outputs.files_exists == 'true'
-        run: |
-          cd ${{ env.APP_NAME }}
-          composer dump-autoload -a
-
       - name: Build ${{ env.APP_NAME }}
         # Skip if no package.json
         if: ${{ steps.versions.outputs.nodeVersion }}
