@@ -40,7 +40,7 @@ class SnapshotPreviewFile implements File, IVersionedPreviewFile {
 	}
 
 	public function getContent() {
-		return stream_get_contents(($this->contentProvider)());
+		return (string)stream_get_contents(($this->contentProvider)());
 	}
 
 	public function putContent($data) {

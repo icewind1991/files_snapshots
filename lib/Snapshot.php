@@ -64,11 +64,11 @@ class Snapshot {
 	}
 
 	public function getMtime($file): int {
-		return filemtime($this->getFilePath($file));
+		return (int)filemtime($this->getFilePath($file));
 	}
 
 	public function getSize($file): int {
-		return filesize($this->getFilePath($file));
+		return (int)filesize($this->getFilePath($file));
 	}
 
 	public function getSnapshotDate(): DateTime {
