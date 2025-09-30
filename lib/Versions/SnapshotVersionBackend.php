@@ -30,14 +30,15 @@ use OCA\Files_Versions\Versions\IVersion;
 use OCA\Files_Versions\Versions\IVersionBackend;
 use OCP\Files\File;
 use OCP\Files\FileInfo;
+use OCP\Files\Node;
+use OCP\Files\NotFoundException;
 use OCP\Files\Storage\IStorage;
 use OCP\IUser;
 
 class SnapshotVersionBackend implements IVersionBackend {
-	protected $versionProvider;
-
-	public function __construct(SnapshotManager $versionProvider) {
-		$this->versionProvider = $versionProvider;
+	public function __construct(
+		private SnapshotManager $versionProvider,
+	) {
 	}
 
 	public function useBackendForStorage(IStorage $storage): bool {
@@ -82,8 +83,23 @@ class SnapshotVersionBackend implements IVersionBackend {
 	}
 
 	public function getVersionFile(IUser $user, FileInfo $sourceFile, $revision): File {
+		$snapshot = null;
+		$snapshots = $this->getVersionsForFile($user, $sourceFile);
+		foreach ($snapshots as $fileSnapshot) {
+			if ($fileSnapshot->getRevisionId() === $revision) {
+				$snapshot = $fileSnapshot;
+			}
+		}
+		if (!$snapshot) {
+			throw new NotFoundException("No snapshot found for revision $revision");
+		}
+
 		return new SnapshotPreviewFile($sourceFile, function () use ($sourceFile, $revision, $user) {
 			return $this->versionProvider->getSnapshot($revision)->readFile($user->getUID() . '/' . $sourceFile->getInternalPath());
-		}, $revision);
+		}, $snapshot);
+	}
+
+	public function getRevision(Node $node): int {
+		return $node->getMTime();
 	}
 }

@@ -30,16 +30,12 @@ use OCP\Files\FileInfo;
 use OCP\IUser;
 
 class SnapshotVersion implements IVersion {
-	private $backend;
-	private $snapshot;
-	private $sourceFile;
-	private $user;
-
-	public function __construct(SnapshotVersionBackend $backend, Snapshot $snapshot, FileInfo $sourceFile, IUser $user) {
-		$this->backend = $backend;
-		$this->snapshot = $snapshot;
-		$this->sourceFile = $sourceFile;
-		$this->user = $user;
+	public function __construct(
+		private SnapshotVersionBackend $backend,
+		private Snapshot $snapshot,
+		private FileInfo $sourceFile,
+		private IUser $user,
+	) {
 	}
 
 	public function getBackend(): IVersionBackend {

@@ -25,32 +25,19 @@ namespace OCA\Files_Snapshots\Controller;
 use OCA\Files_Snapshots\Snapshot;
 use OCA\Files_Snapshots\SnapshotManager;
 use OCP\AppFramework\Controller;
-use OCP\IConfig;
+use OCP\IAppConfig;
 use OCP\IRequest;
 
 class AdminController extends Controller {
-	/** @var SnapshotManager */
-	private $snapshotManager;
-
-	/** @var IConfig */
-	private $config;
-
-	public function __construct($appName,
+	public function __construct(
+		$appName,
 		IRequest $request,
-		SnapshotManager $snapshotManager,
-		IConfig $config,
+		private IAppConfig $appConfig,
 	) {
 		parent::__construct($appName, $request);
-		$this->snapshotManager = $snapshotManager;
-		$this->config = $config;
 	}
 
-	/**
-	 * @param string $snapshotFormat
-	 * @param string $dateFormat
-	 * @return array
-	 */
-	public function testSettings($snapshotFormat, $dateFormat) {
+	public function testSettings(string $snapshotFormat, string $dateFormat): array {
 		$manager = new SnapshotManager($snapshotFormat, $dateFormat);
 		$snapshots = iterator_to_array($manager->listAllSnapshots());
 		usort($snapshots, function (Snapshot $a, Snapshot $b) {
@@ -68,13 +55,9 @@ class AdminController extends Controller {
 		return array_combine($names, $dates);
 	}
 
-	/**
-	 * @param string $snapshotFormat
-	 * @param string $dateFormat
-	 */
-	public function save($snapshotFormat, $dateFormat) {
-		$this->config->setAppValue('files_snapshots', 'snap_format', $snapshotFormat);
-		$this->config->setAppValue('files_snapshots', 'date_format', $dateFormat);
+	public function save(string $snapshotFormat, string $dateFormat): array {
+		$this->appConfig->setValueString('files_snapshots', 'snap_format', $snapshotFormat);
+		$this->appConfig->setValueString('files_snapshots', 'date_format', $dateFormat);
 		return [$snapshotFormat];
 	}
 }

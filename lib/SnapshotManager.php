@@ -25,21 +25,16 @@ namespace OCA\Files_Snapshots;
 use Traversable;
 
 class SnapshotManager {
-	/** @var string */
-	private $snapshotFormat;
-
 	/** @var string|null */
 	private $snapshotPrefix;
 
 	/** @var string|null */
 	private $snapshotPostfix;
 
-	/** @var string */
-	private $dateFormat;
-
-	public function __construct(string $snapshotFormat, string $dateFormat) {
-		$this->snapshotFormat = $snapshotFormat;
-		$this->dateFormat = $dateFormat;
+	public function __construct(
+		private string $snapshotFormat,
+		private string $dateFormat,
+	) {
 
 		if (strpos($this->snapshotFormat, '/%snapshot%/') !== false) {
 			[$this->snapshotPrefix, $this->snapshotPostfix] = explode('/%snapshot%/', $this->snapshotFormat);

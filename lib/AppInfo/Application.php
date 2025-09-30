@@ -24,7 +24,8 @@ namespace OCA\Files_Snapshots\AppInfo;
 
 use OCA\Files_Snapshots\SnapshotManager;
 use OCP\AppFramework\App;
-use OCP\AppFramework\IAppContainer;
+use OCP\IAppConfig;
+use Psr\Container\ContainerInterface;
 
 class Application extends App {
 	public function __construct(array $urlParams = []) {
@@ -32,11 +33,12 @@ class Application extends App {
 
 		$container = $this->getContainer();
 
-		$container->registerService(SnapshotManager::class, function (IAppContainer $appContainer) {
-			$config = $appContainer->getServer()->getConfig();
+		$container->registerService(SnapshotManager::class, function (ContainerInterface $container) {
+			/** @var IAppConfig $appConfig */
+			$appConfig = $container->get(IAppConfig::class);
 			return new SnapshotManager(
-				$config->getAppValue('files_snapshots', 'snap_format'),
-				$config->getAppValue('files_snapshots', 'date_format', 'Y-m-d_H:i:s')
+				$appConfig->getValueString('files_snapshots', 'snap_format'),
+				$appConfig->getValueString('files_snapshots', 'date_format', 'Y-m-d_H:i:s')
 			);
 		});
 	}

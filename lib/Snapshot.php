@@ -28,12 +28,6 @@ class Snapshot {
 	/** @var string */
 	private $path;
 
-	/** @var string */
-	private $name;
-
-	/** @var string */
-	private $dateFormat;
-
 	/**
 	 * Snapshot constructor.
 	 *
@@ -41,10 +35,12 @@ class Snapshot {
 	 * @param string $name
 	 * @param string $dateFormat
 	 */
-	public function __construct(string $path, string $name, string $dateFormat) {
+	public function __construct(
+		string $path,
+		private string $name,
+		private string $dateFormat,
+	) {
 		$this->path = rtrim($path, '/');
-		$this->name = $name;
-		$this->dateFormat = $dateFormat;
 	}
 
 	public function getPath(): string {
