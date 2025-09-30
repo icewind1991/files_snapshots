@@ -23,15 +23,13 @@
 namespace OCA\Files_Snapshots\Settings;
 
 use OCP\AppFramework\Http\TemplateResponse;
-use OCP\IConfig;
+use OCP\IAppConfig;
 use OCP\Settings\ISettings;
 
 class Admin implements ISettings {
-	/** @var IConfig */
-	private $config;
-
-	public function __construct(IConfig $config) {
-		$this->config = $config;
+	public function __construct(
+		private IAppConfig $appConfig
+	) {
 	}
 
 	/**
@@ -39,8 +37,8 @@ class Admin implements ISettings {
 	 */
 	public function getForm() {
 		$parameters = [
-			'snapshot_format' => $this->config->getAppValue('files_snapshots', 'snap_format'),
-			'date_format' => $this->config->getAppValue('files_snapshots', 'date_format', 'Y-m-d_H:i:s')
+			'snapshot_format' => $this->appConfig->getValueString('files_snapshots', 'snap_format'),
+			'date_format' => $this->appConfig->getValueString('files_snapshots', 'date_format', 'Y-m-d_H:i:s')
 		];
 
 		return new TemplateResponse('files_snapshots', 'settings', $parameters);

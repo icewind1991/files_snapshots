@@ -34,10 +34,9 @@ use OCP\Files\Storage\IStorage;
 use OCP\IUser;
 
 class SnapshotVersionBackend implements IVersionBackend {
-	protected $versionProvider;
-
-	public function __construct(SnapshotManager $versionProvider) {
-		$this->versionProvider = $versionProvider;
+	public function __construct(
+		private SnapshotManager $versionProvider
+	) {
 	}
 
 	public function useBackendForStorage(IStorage $storage): bool {

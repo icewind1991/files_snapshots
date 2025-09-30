@@ -29,14 +29,14 @@ use OCP\Files\ForbiddenException;
 use OCP\Preview\IVersionedPreviewFile;
 
 class SnapshotPreviewFile implements File, IVersionedPreviewFile {
-	private $sourceFile;
-	private $contentProvider;
-	private $revisionId;
-
-	public function __construct(FileInfo $sourceFile, callable $contentProvider, string $revisionId) {
-		$this->sourceFile = $sourceFile;
-		$this->contentProvider = $contentProvider;
-		$this->revisionId = $revisionId;
+	/**
+	 * @param callable(): resource $contentProvider
+	 */
+	public function __construct(
+		private FileInfo $sourceFile,
+		private $contentProvider,
+		private string $revisionId
+	) {
 	}
 
 	public function getContent() {
