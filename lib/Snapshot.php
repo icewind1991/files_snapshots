@@ -38,7 +38,7 @@ class Snapshot {
 	public function __construct(
 		string $path,
 		private string $name,
-		private string $dateFormat
+		private string $dateFormat,
 	) {
 		$this->path = rtrim($path, '/');
 	}

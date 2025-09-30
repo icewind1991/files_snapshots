@@ -35,7 +35,7 @@ class SnapshotPreviewFile implements File, IVersionedPreviewFile {
 	public function __construct(
 		private FileInfo $sourceFile,
 		private $contentProvider,
-		private string $revisionId
+		private string $revisionId,
 	) {
 	}
 

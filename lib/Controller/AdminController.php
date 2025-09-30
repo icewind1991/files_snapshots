@@ -26,11 +26,11 @@ use OCA\Files_Snapshots\Snapshot;
 use OCA\Files_Snapshots\SnapshotManager;
 use OCP\AppFramework\Controller;
 use OCP\IAppConfig;
-use OCP\IConfig;
 use OCP\IRequest;
 
 class AdminController extends Controller {
-	public function __construct($appName,
+	public function __construct(
+		$appName,
 		IRequest $request,
 		private IAppConfig $appConfig,
 	) {

@@ -28,7 +28,7 @@ use OCP\Settings\ISettings;
 
 class Admin implements ISettings {
 	public function __construct(
-		private IAppConfig $appConfig
+		private IAppConfig $appConfig,
 	) {
 	}
 

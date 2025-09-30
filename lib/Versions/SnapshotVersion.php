@@ -34,7 +34,7 @@ class SnapshotVersion implements IVersion {
 		private SnapshotVersionBackend $backend,
 		private Snapshot $snapshot,
 		private FileInfo $sourceFile,
-		private IUser $user
+		private IUser $user,
 	) {
 	}
 

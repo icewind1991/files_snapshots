@@ -33,7 +33,7 @@ class SnapshotManager {
 
 	public function __construct(
 		private string $snapshotFormat,
-		private string $dateFormat
+		private string $dateFormat,
 	) {
 
 		if (strpos($this->snapshotFormat, '/%snapshot%/') !== false) {
