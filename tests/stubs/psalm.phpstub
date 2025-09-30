@@ -49,6 +49,8 @@ namespace OCA\Files_Versions\Versions {
 		public function read(IVersion $version);
 
 		public function getVersionFile(IUser $user, FileInfo $sourceFile, $revision): File;
+
+		public function getRevision(\OCP\Files\Node $node): int;
 	}
 
 	interface IVersion {

@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace OCA\Files_Snapshots\Versions;
 
+use OCA\Files_Versions\Versions\IVersion;
 use OCP\Files\File;
 use OCP\Files\FileInfo;
 use OCP\Files\ForbiddenException;
@@ -35,7 +36,7 @@ class SnapshotPreviewFile implements File, IVersionedPreviewFile {
 	public function __construct(
 		private FileInfo $sourceFile,
 		private $contentProvider,
-		private string $revisionId,
+		private IVersion $version,
 	) {
 	}
 
@@ -67,7 +68,7 @@ class SnapshotPreviewFile implements File, IVersionedPreviewFile {
 	 * @inheritDoc
 	 */
 	public function getMtime() {
-		return $this->sourceFile->getMtime();
+		return $this->version->getTimestamp();
 	}
 
 	/**
@@ -144,7 +145,7 @@ class SnapshotPreviewFile implements File, IVersionedPreviewFile {
 	 * @inheritDoc
 	 */
 	public function getPreviewVersion(): string {
-		return $this->revisionId;
+		return (string)$this->version->getRevisionId();
 	}
 
 	/**
@@ -229,7 +230,7 @@ class SnapshotPreviewFile implements File, IVersionedPreviewFile {
 	 * @inheritDoc
 	 */
 	public function getEtag() {
-		return $this->revisionId;
+		return (string)$this->version->getRevisionId();
 	}
 
 	/**
