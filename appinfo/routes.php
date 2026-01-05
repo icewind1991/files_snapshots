@@ -20,11 +20,7 @@
  *
  */
 
-namespace OCA\Files_Snapshots\AppInfo;
-
-/** @var Application $application */
-$application = \OC::$server->query(Application::class);
-$application->registerRoutes($this, [
+return [
 	'routes' => [
 		[
 			'name' => 'Admin#testSettings',
@@ -37,4 +33,4 @@ $application->registerRoutes($this, [
 			'verb' => 'POST',
 		],
 	],
-]);
+];
