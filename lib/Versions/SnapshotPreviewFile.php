@@ -40,7 +40,7 @@ class SnapshotPreviewFile implements File, IVersionedPreviewFile {
 	) {
 	}
 
-	public function getContent() {
+	public function getContent(): string {
 		return (string)stream_get_contents(($this->contentProvider)());
 	}
 
@@ -74,7 +74,7 @@ class SnapshotPreviewFile implements File, IVersionedPreviewFile {
 	/**
 	 * @inheritDoc
 	 */
-	public function getMimetype() {
+	public function getMimetype(): string {
 		return $this->sourceFile->getMimeType();
 	}
 
