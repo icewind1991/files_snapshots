@@ -24,6 +24,7 @@ declare(strict_types=1);
 namespace OCA\Files_Snapshots\Versions;
 
 use OCA\Files_Versions\Versions\IVersion;
+use OCP\Files\Cache\ICacheEntry;
 use OCP\Files\File;
 use OCP\Files\FileInfo;
 use OCP\Files\ForbiddenException;
@@ -327,5 +328,9 @@ class SnapshotPreviewFile implements File, IVersionedPreviewFile {
 
 	public function getMetadata(): array {
 		return [];
+	}
+
+	public function getData(): ICacheEntry {
+		return $this->sourceFile->getData();
 	}
 }
