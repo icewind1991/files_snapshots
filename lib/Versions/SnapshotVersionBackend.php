@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace OCA\Files_Snapshots\Versions;
 
+use OC\Files\Node\Node;
 use OC\Files\Storage\Local;
 use OCA\Files_Snapshots\Snapshot;
 use OCA\Files_Snapshots\SnapshotManager;
@@ -30,7 +31,6 @@ use OCA\Files_Versions\Versions\IVersion;
 use OCA\Files_Versions\Versions\IVersionBackend;
 use OCP\Files\File;
 use OCP\Files\FileInfo;
-use OCP\Files\Node;
 use OCP\Files\NotFoundException;
 use OCP\Files\Storage\IStorage;
 use OCP\IUser;
