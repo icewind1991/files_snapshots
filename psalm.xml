@@ -14,6 +14,8 @@
 		<directory name="vendor/nextcloud/ocp"/>
 	</extraFiles>
 	<stubs>
-		<file name="tests/stubs/psalm.phpstub"/>
+		<file name="tests/stubs/oca_files_versions_versions_iversionbackend.php" />
+		<file name="tests/stubs/oca_files_versions_versions_iversion.php" />
+		<file name="tests/stubs/oc_files_node_node.php" />
 	</stubs>
 </psalm>
