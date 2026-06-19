@@ -331,6 +331,11 @@ class SnapshotPreviewFile implements File, IVersionedPreviewFile {
 	}
 
 	public function getData(): ICacheEntry {
+		/** @psalm-suppress UndefinedInterfaceMethod */
 		return $this->sourceFile->getData();
+	}
+
+	public function getLastActivity(): int {
+		return max($this->getUploadTime(), $this->getMTime());
 	}
 }
