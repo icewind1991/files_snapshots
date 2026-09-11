@@ -22,26 +22,32 @@
 
 namespace OCA\Files_Snapshots;
 
+use OCP\IAppConfig;
 use Traversable;
 
 class SnapshotManager {
-	/** @var string|null */
-	private $snapshotPrefix;
+	private ?string $snapshotPrefix;
+	private ?string $snapshotPostfix;
+	private string $dateFormat;
+	private string $snapshotFormat;
 
-	/** @var string|null */
-	private $snapshotPostfix;
+	public function __construct(IAppConfig $appConfig) {
+		$this->setSnapshotFormat($appConfig->getValueString('files_snapshots', 'snap_format'));
+		$this->setDateFormat($appConfig->getValueString('files_snapshots', 'date_format', 'Y-m-d_H:i:s'));
+	}
 
-	public function __construct(
-		private string $snapshotFormat,
-		private string $dateFormat,
-	) {
-
-		if (strpos($this->snapshotFormat, '/%snapshot%/') !== false) {
+	public function setSnapshotFormat(string $snapshotFormat): void {
+		$this->snapshotFormat = $snapshotFormat;
+		if (str_contains($this->snapshotFormat, '/%snapshot%/')) {
 			[$this->snapshotPrefix, $this->snapshotPostfix] = explode('/%snapshot%/', $this->snapshotFormat);
 		} else {
 			$this->snapshotPrefix = null;
 			$this->snapshotPostfix = null;
 		}
+	}
+
+	public function setDateFormat(string $dateFormat): void {
+		$this->dateFormat = $dateFormat;
 	}
 
 	/**
@@ -64,7 +70,6 @@ class SnapshotManager {
 	}
 
 	/**
-	 * @param $file
 	 * @return Snapshot[]
 	 */
 	public function listSnapshotsForFile(string $file): array {
@@ -79,7 +84,6 @@ class SnapshotManager {
 		usort($allSnapshots, function (Snapshot $a, Snapshot $b) {
 			return $a->getSnapshotDate()->getTimestamp() <=> $b->getSnapshotDate()->getTimestamp();
 		});
-		$a = 1;
 		return array_values(array_filter($allSnapshots, function (Snapshot $snapshot) use (&$lastMtime, $file) {
 			$snapshotMtime = $snapshot->getMtime($file);
 			if ($snapshotMtime > $lastMtime) {
@@ -94,7 +98,7 @@ class SnapshotManager {
 		if ($this->snapshotPrefix === null) {
 			return null;
 		}
-		$path = $path = $this->snapshotPrefix . '/' . $id . '/' . $this->snapshotPostfix;
+		$path = $this->snapshotPrefix . '/' . $id . '/' . $this->snapshotPostfix;
 		return is_dir($path) ? new Snapshot($path, $id, $this->dateFormat) : null;
 	}
 }

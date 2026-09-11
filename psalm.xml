@@ -6,6 +6,7 @@
 	xsi:schemaLocation="https://getpsalm.org/schema/config"
 	findUnusedCode="false"
 	phpVersion="8.2"
+	errorBaseline="psalm-baseline.xml"
 >
 	<projectFiles>
 		<directory name="lib"/>

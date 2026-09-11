@@ -32,13 +32,16 @@ class AdminController extends Controller {
 	public function __construct(
 		$appName,
 		IRequest $request,
-		private IAppConfig $appConfig,
+		private readonly IAppConfig $appConfig,
 	) {
 		parent::__construct($appName, $request);
 	}
 
 	public function testSettings(string $snapshotFormat, string $dateFormat): array {
-		$manager = new SnapshotManager($snapshotFormat, $dateFormat);
+		$manager = new SnapshotManager($this->appConfig);
+		$manager->setSnapshotFormat($snapshotFormat);
+		$manager->setDateFormat($dateFormat);
+
 		$snapshots = iterator_to_array($manager->listAllSnapshots());
 		usort($snapshots, function (Snapshot $a, Snapshot $b) {
 			return strcmp($a->getName(), $b->getName());

@@ -31,10 +31,10 @@ use OCP\IUser;
 
 class SnapshotVersion implements IVersion {
 	public function __construct(
-		private SnapshotVersionBackend $backend,
-		private Snapshot $snapshot,
-		private FileInfo $sourceFile,
-		private IUser $user,
+		private readonly SnapshotVersionBackend $backend,
+		private readonly Snapshot $snapshot,
+		private readonly FileInfo $sourceFile,
+		private readonly IUser $user,
 	) {
 	}
 
