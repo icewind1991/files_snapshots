@@ -25,20 +25,12 @@ namespace OCA\Files_Snapshots;
 use DateTime;
 
 class Snapshot {
-	/** @var string */
-	private $path;
+	private string $path;
 
-	/**
-	 * Snapshot constructor.
-	 *
-	 * @param string $path
-	 * @param string $name
-	 * @param string $dateFormat
-	 */
 	public function __construct(
 		string $path,
-		private string $name,
-		private string $dateFormat,
+		private readonly string $name,
+		private readonly string $dateFormat,
 	) {
 		$this->path = rtrim($path, '/');
 	}

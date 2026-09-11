@@ -37,7 +37,7 @@ use OCP\IUser;
 
 class SnapshotVersionBackend implements IVersionBackend {
 	public function __construct(
-		private SnapshotManager $versionProvider,
+		private readonly SnapshotManager $versionProvider,
 	) {
 	}
 

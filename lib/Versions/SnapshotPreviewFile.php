@@ -35,9 +35,9 @@ class SnapshotPreviewFile implements File, IVersionedPreviewFile {
 	 * @param callable(): resource $contentProvider
 	 */
 	public function __construct(
-		private FileInfo $sourceFile,
+		private readonly FileInfo $sourceFile,
 		private $contentProvider,
-		private IVersion $version,
+		private readonly IVersion $version,
 	) {
 	}
 

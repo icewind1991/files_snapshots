@@ -26,6 +26,7 @@ namespace OCA\Files_Snapshots\Tests;
 use DateTime;
 use OCA\Files_Snapshots\Snapshot;
 use OCA\Files_Snapshots\SnapshotManager;
+use OCP\IAppConfig;
 use OCP\ITempManager;
 use Test\TestCase;
 
@@ -78,15 +79,26 @@ class SnapshotManagerTest extends TestCase {
 		touch("$basedir/nodate/snap2/sub", 110);
 	}
 
+	private function getManager(string $snapshotFormat, string $dateFormat = 'Y-m-d_H:i:s'): SnapshotManager {
+		$appConfig = $this->createMock(IAppConfig::class);
+		$appConfig->method('getValueString')
+			->willReturnCallback(fn ($_app, $key, $default) => match ($key) {
+				'snap_format' => $snapshotFormat,
+				'date_format' => $dateFormat,
+				default => $default,
+			});
+		return new SnapshotManager($appConfig);
+	}
+
 	public function testListSnapshotsNotConfigured() {
-		$manager = new SnapshotManager('', '*Y-m-d_H:i:s*');
+		$manager = $this->getManager('', '*Y-m-d_H:i:s*');
 		$this->assertEquals([], iterator_to_array($manager->listAllSnapshots()));
 		$this->assertEquals([], $manager->listSnapshotsForFile('dummy'));
 		$this->assertEquals(null, $manager->getSnapshot('dummy'));
 	}
 
 	public function testListSnapshots() {
-		$manager = new SnapshotManager('/' . $this->baseDir . '/pre1/%snapshot%/sub', '*Y-m-d_H:i:s*');
+		$manager = $this->getManager('/' . $this->baseDir . '/pre1/%snapshot%/sub', '*Y-m-d_H:i:s*');
 
 		/** @var Snapshot[] $snapshots */
 		$snapshots = iterator_to_array($manager->listAllSnapshots());
@@ -102,7 +114,7 @@ class SnapshotManagerTest extends TestCase {
 	}
 
 	public function testListSnapshotsForFile() {
-		$manager = new SnapshotManager('/' . $this->baseDir . '/pre1/%snapshot%/sub', '*Y-m-d_H:i:s*');
+		$manager = $this->getManager('/' . $this->baseDir . '/pre1/%snapshot%/sub', '*Y-m-d_H:i:s*');
 
 		$snapshots = $manager->listSnapshotsForFile('test.txt');
 		$this->assertCount(2, $snapshots);
@@ -114,7 +126,7 @@ class SnapshotManagerTest extends TestCase {
 	}
 
 	public function testListSnapshotsForFileNoDate() {
-		$manager = new SnapshotManager('/' . $this->baseDir . '/nodate/%snapshot%/sub', '*snap*');
+		$manager = $this->getManager('/' . $this->baseDir . '/nodate/%snapshot%/sub', '*snap*');
 
 		$snapshots = $manager->listSnapshotsForFile('test.txt');
 		$this->assertCount(2, $snapshots);
@@ -124,7 +136,7 @@ class SnapshotManagerTest extends TestCase {
 	}
 
 	public function testListSnapshotsGlob() {
-		$manager = new SnapshotManager('/' . $this->baseDir . '/pre*/%snapshot%/sub', '*Y-m-d_H:i:s*');
+		$manager = $this->getManager('/' . $this->baseDir . '/pre*/%snapshot%/sub', '*Y-m-d_H:i:s*');
 
 		/** @var Snapshot[] $snapshots */
 		$snapshots = iterator_to_array($manager->listAllSnapshots());
