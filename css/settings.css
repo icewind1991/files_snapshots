@@ -27,3 +27,12 @@
 #files_snapshots div.loading {
 	padding-top: 15em;
 }
+
+#files_snapshots div.loading.hidden,
+#files_snapshots table.hidden {
+	display: none;
+}
+
+#files_snapshots .error {
+	color: var(--color-error);
+}

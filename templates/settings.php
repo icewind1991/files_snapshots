@@ -42,6 +42,7 @@ style('files_snapshots', 'settings');
 		<tr>
 			<td colspan="2">
 				<input type="submit" value="<?php p($l->t('Save')); ?>"/>
+				<span id="save_status" class="msg"></span>
 			</td>
 		</tr>
 	</table>
