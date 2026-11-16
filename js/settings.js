@@ -51,10 +51,31 @@
 		}
 		var format = document.getElementById('format');
 		var dateFormat = document.getElementById('date_format');
+		var mountBody = form.querySelector('table.mount-formats tbody');
 		var resultTable = form.querySelector('table.result');
 		var resultBody = form.querySelector('table.result tbody');
 		var loading = form.querySelector('div.loading');
 		var saveStatus = document.getElementById('save_status');
+
+		function getMountFormats() {
+			var result = [];
+			mountBody.querySelectorAll('tr.mount-format').forEach(function (row) {
+				var source = row.querySelector('.mount-source').value.trim();
+				var mountFormat = row.querySelector('.mount-format-input').value.trim();
+				if (source || mountFormat) {
+					result.push({source: source, format: mountFormat});
+				}
+			});
+			return result;
+		}
+
+		function getSettings() {
+			return {
+				snapshotFormat: format.value,
+				dateFormat: dateFormat.value,
+				mountFormats: getMountFormats(),
+			};
+		}
 
 		function showStatus(el, text, isError) {
 			el.textContent = text;
@@ -64,24 +85,25 @@
 		form.addEventListener('submit', function (event) {
 			event.preventDefault();
 			showStatus(saveStatus, translate('Saving…'));
-			post('apps/files_snapshots/settings/save', {
-				snapshotFormat: format.value,
-				dateFormat: dateFormat.value,
-			}).then(function () {
+			post('apps/files_snapshots/settings/save', getSettings()).then(function () {
 				showStatus(saveStatus, translate('Saved'));
 			}, function (error) {
 				showStatus(saveStatus, translate('Failed to save settings: {error}', {error: error.message}), true);
 			});
 		});
 
+		function testFormat(snapshotFormat) {
+			return post('apps/files_snapshots/settings/test', {
+				snapshotFormat: snapshotFormat,
+				dateFormat: dateFormat.value,
+			});
+		}
+
 		var testSettings = debounce(function () {
 			resultTable.classList.add('hidden');
 			loading.classList.remove('hidden');
 			resultBody.textContent = '';
-			post('apps/files_snapshots/settings/test', {
-				snapshotFormat: format.value,
-				dateFormat: dateFormat.value,
-			}).then(function (snapshots) {
+			testFormat(format.value).then(function (snapshots) {
 				var names = Object.keys(snapshots);
 				if (names.length < 1) {
 					resultBody.appendChild(element('tr', {class: 'error'}, [
@@ -105,9 +127,62 @@
 			});
 		}, 250);
 
+		function testMountRow(row) {
+			var status = row.querySelector('.mount-status');
+			var mountFormat = row.querySelector('.mount-format-input').value.trim();
+			showStatus(status, '');
+			if (!mountFormat) {
+				return;
+			}
+			testFormat(mountFormat).then(function (snapshots) {
+				var count = Object.keys(snapshots).length;
+				if (count < 1) {
+					showStatus(status, translate('No snapshots found'), true);
+				} else {
+					showStatus(status, window.n
+						? window.n('files_snapshots', '%n snapshot found', '%n snapshots found', count)
+						: count + ' snapshots found');
+				}
+			}, function (error) {
+				showStatus(status, error.message, true);
+			});
+		}
+
+		var testMountRows = debounce(function () {
+			mountBody.querySelectorAll('tr.mount-format').forEach(testMountRow);
+		}, 250);
+
+		function addMountRow() {
+			var row = element('tr', {class: 'mount-format'}, [
+				element('td', {}, [element('input', {type: 'text', class: 'mount-source', placeholder: '/mnt/external'})]),
+				element('td', {}, [element('input', {type: 'text', class: 'mount-format-input', placeholder: '/mnt/external/.zfs/snapshot/%snapshot%'})]),
+				element('td', {class: 'mount-status'}),
+				element('td', {}, [element('button', {type: 'button', class: 'icon-delete remove-mount-format', title: translate('Remove')})]),
+			]);
+			mountBody.appendChild(row);
+			return row;
+		}
+
+		form.querySelector('.add-mount-format').addEventListener('click', function () {
+			addMountRow().querySelector('.mount-source').focus();
+		});
+		mountBody.addEventListener('click', function (event) {
+			var button = event.target.closest('.remove-mount-format');
+			if (button) {
+				button.closest('tr').remove();
+			}
+		});
+		mountBody.addEventListener('input', function (event) {
+			if (event.target.classList.contains('mount-format-input')) {
+				testMountRows();
+			}
+		});
+
 		format.addEventListener('input', testSettings);
 		dateFormat.addEventListener('input', testSettings);
+		dateFormat.addEventListener('input', testMountRows);
 		testSettings();
+		testMountRows();
 	}
 
 	if (document.readyState === 'loading') {

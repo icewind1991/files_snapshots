@@ -33,14 +33,15 @@ class AdminController extends Controller {
 		$appName,
 		IRequest $request,
 		private readonly IAppConfig $appConfig,
+		private readonly SnapshotManager $snapshotManager,
 	) {
 		parent::__construct($appName, $request);
 	}
 
 	public function testSettings(string $snapshotFormat, string $dateFormat): array {
-		$manager = new SnapshotManager($this->appConfig);
-		$manager->setSnapshotFormat($snapshotFormat);
+		$manager = clone $this->snapshotManager;
 		$manager->setDateFormat($dateFormat);
+		$manager->setSnapshotFormat($snapshotFormat);
 
 		$snapshots = iterator_to_array($manager->listAllSnapshots());
 		usort($snapshots, function (Snapshot $a, Snapshot $b) {
@@ -58,9 +59,15 @@ class AdminController extends Controller {
 		return array_combine($names, $dates);
 	}
 
-	public function save(string $snapshotFormat, string $dateFormat): array {
+	public function save(string $snapshotFormat, string $dateFormat, array $mountFormats = []): array {
+		$mountFormats = SnapshotManager::sanitizeMountFormats($mountFormats);
 		$this->appConfig->setValueString('files_snapshots', 'snap_format', $snapshotFormat);
 		$this->appConfig->setValueString('files_snapshots', 'date_format', $dateFormat);
-		return [$snapshotFormat];
+		$this->appConfig->setValueArray('files_snapshots', 'mount_formats', $mountFormats);
+		return [
+			'snapshotFormat' => $snapshotFormat,
+			'dateFormat' => $dateFormat,
+			'mountFormats' => $mountFormats,
+		];
 	}
 }

@@ -25,8 +25,10 @@ namespace OCA\Files_Snapshots\Tests;
 
 use DateTime;
 use OCA\Files_Snapshots\Snapshot;
+use OCA\Files_Snapshots\SnapshotFormat;
 use OCA\Files_Snapshots\SnapshotManager;
 use OCP\IAppConfig;
+use OCP\IConfig;
 use OCP\ITempManager;
 use Test\TestCase;
 
@@ -79,15 +81,25 @@ class SnapshotManagerTest extends TestCase {
 		touch("$basedir/nodate/snap2/sub", 110);
 	}
 
-	private function getManager(string $snapshotFormat, string $dateFormat = 'Y-m-d_H:i:s'): SnapshotManager {
+	private function getManager(
+		string $snapshotFormat,
+		string $dateFormat = 'Y-m-d_H:i:s',
+		array $mountFormats = [],
+		string $dataDirectory = '/var/www/data',
+	): SnapshotManager {
 		$appConfig = $this->createMock(IAppConfig::class);
 		$appConfig->method('getValueString')
-			->willReturnCallback(fn ($_app, $key, $default) => match ($key) {
+			->willReturnCallback(fn ($_app, $key, $default = '') => match ($key) {
 				'snap_format' => $snapshotFormat,
 				'date_format' => $dateFormat,
 				default => $default,
 			});
-		return new SnapshotManager($appConfig);
+		$appConfig->method('getValueArray')
+			->willReturnCallback(fn ($_app, $key, $default = []) => $key === 'mount_formats' ? $mountFormats : $default);
+		$config = $this->createMock(IConfig::class);
+		$config->method('getSystemValueString')
+			->willReturnCallback(fn ($key, $default = '') => $key === 'datadirectory' ? $dataDirectory : $default);
+		return new SnapshotManager($appConfig, $config);
 	}
 
 	public function testListSnapshotsNotConfigured() {
@@ -152,6 +164,71 @@ class SnapshotManagerTest extends TestCase {
 		$this->assertEquals(new DateTime('@1714137760'), $snapshots[4]->getSnapshotDate());
 	}
 
+	/**
+	 * Create a fake zfs dataset at $root with snapshots containing $file
+	 *
+	 * @param array<string, string> $snapshots snapshot name => file content
+	 */
+	private function createZfsDataset(string $root, string $file, array $snapshots): void {
+		$mtime = 100;
+		foreach ($snapshots as $name => $content) {
+			$path = "$root/.zfs/snapshot/$name/$file";
+			mkdir(dirname($path), 0777, true);
+			file_put_contents($path, $content);
+			touch($path, $mtime);
+			$mtime += 10;
+		}
+		if (!is_dir(dirname("$root/$file"))) {
+			mkdir(dirname("$root/$file"), 0777, true);
+		}
+		file_put_contents("$root/$file", 'current');
+	}
+
+	public function testResolveDataDirectory() {
+		$manager = $this->getManager('/' . $this->baseDir . '/pre1/%snapshot%/sub', '*Y-m-d_H:i:s*', [], '/var/www/data/');
+
+		$location = $manager->resolve('/var/www/data/test.txt');
+		$this->assertNotNull($location);
+		$this->assertEquals('test.txt', $location->relativePath);
+		$this->assertCount(2, $manager->listSnapshotsForLocation($location));
+
+		$this->assertNull($manager->resolve('/var/www/database/test.txt'));
+		$this->assertNull($manager->resolve('/somewhere/else/test.txt'));
+	}
+
+	public function testResolveNotConfigured() {
+		$manager = $this->getManager('');
+		$this->assertNull($manager->resolve('/var/www/data/test.txt'));
+	}
+
+	public function testResolveMountFormatLongestMatch() {
+		$base = $this->baseDir;
+		$this->createZfsDataset("$base/external", 'dir/file.txt', [
+			'zfs-auto-snap_daily-2026-11-01-1325' => 'v1',
+			'zfs-auto-snap_daily-2026-11-02-1325' => 'v2',
+		]);
+		$manager = $this->getManager('/' . $base . '/pre1/%snapshot%/sub', '*-*-*-Y-m-d-Hi', [
+			['source' => '/', 'format' => '/nonexistent/%snapshot%'],
+			['source' => "$base/external/", 'format' => "$base/external/.zfs/snapshot/%snapshot%"],
+			['source' => 'relative/path', 'format' => '/ignored/%snapshot%'],
+			['source' => "$base/invalid", 'format' => '/missing-placeholder'],
+		], $base . '/data');
+
+		$location = $manager->resolve("$base/external/dir/file.txt");
+		$this->assertNotNull($location);
+		$this->assertEquals('dir/file.txt', $location->relativePath);
+		$snapshots = $manager->listSnapshotsForLocation($location);
+		$this->assertCount(2, $snapshots);
+		$this->assertEquals('zfs-auto-snap_daily-2026-11-01-1325', $snapshots[0]->getName());
+		$this->assertEquals(DateTime::createFromFormat('Y-m-d-Hi', '2026-11-02-1325'), $snapshots[1]->getSnapshotDate());
+		$this->assertEquals('v2', stream_get_contents($snapshots[1]->readFile($location->relativePath)));
+
+		// the catch-all "/" mapping is used for anything else
+		$other = $manager->resolve('/some/other/file.txt');
+		$this->assertNotNull($other);
+		$this->assertEquals('some/other/file.txt', $other->relativePath);
+	}
+
 	public function testSymlinksOutOfSnapshotsAreNotFollowed() {
 		$base = rtrim($this->baseDir, '/');
 		mkdir("$base/outside", 0777, true);
@@ -174,5 +251,30 @@ class SnapshotManagerTest extends TestCase {
 			$this->assertSame(0, $snapshot->getSize($file), $file);
 			$this->assertSame(0, $snapshot->getMtime($file), $file);
 		}
+	}
+
+	public function testGetSnapshotRejectsTraversal() {
+		$format = new SnapshotFormat('/' . $this->baseDir . '/pre1/%snapshot%/sub', '*Y-m-d_H:i:s*');
+		$this->assertNotNull($format->getSnapshot('autosnap_2021-02-21_19:16:36_daily'));
+		$this->assertNull($format->getSnapshot('..'));
+		$this->assertNull($format->getSnapshot('../pre1/autosnap_2021-02-21_19:16:36_daily'));
+		$this->assertNull($format->getSnapshot(''));
+	}
+
+	public function testGetSnapshotGlob() {
+		$manager = $this->getManager('/' . $this->baseDir . '/pre*/%snapshot%/sub', '*Y-m-d_H:i:s*');
+		$snapshot = $manager->getSnapshot('autosnap_2021-02-24_12:53:43_daily');
+		$this->assertNotNull($snapshot);
+		$this->assertEquals('autosnap_2021-02-24_12:53:43_daily', $snapshot->getName());
+	}
+
+	public function testSnapshotFormatEdgeCases() {
+		$invalid = new SnapshotFormat('/no/placeholder', 'Y-m-d');
+		$this->assertFalse($invalid->isValid());
+		$this->assertSame([], iterator_to_array($invalid->listSnapshots()));
+		$this->assertNull($invalid->getSnapshot('anything'));
+
+		$format = new SnapshotFormat('/' . $this->baseDir . '/pre1/%snapshot%/sub', 'Y-m-d');
+		$this->assertNull($format->getSnapshot('does-not-exist'));
 	}
 }

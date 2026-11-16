@@ -23,61 +23,97 @@
 namespace OCA\Files_Snapshots;
 
 use OCP\IAppConfig;
+use OCP\IConfig;
 use Traversable;
 
 class SnapshotManager {
-	private ?string $snapshotPrefix;
-	private ?string $snapshotPostfix;
+	private string $rawSnapshotFormat = '';
+	private SnapshotFormat $snapshotFormat;
 	private string $dateFormat;
-	private string $snapshotFormat;
+	private ?string $dataDirectory;
+	/** @var list<array{source: string, format: string}> */
+	private array $mountFormats = [];
 
-	public function __construct(IAppConfig $appConfig) {
-		$this->setSnapshotFormat($appConfig->getValueString('files_snapshots', 'snap_format'));
+	public function __construct(IAppConfig $appConfig, IConfig $config) {
+		$this->setDataDirectory($config->getSystemValueString('datadirectory'));
 		$this->setDateFormat($appConfig->getValueString('files_snapshots', 'date_format', 'Y-m-d_H:i:s'));
+		$this->setSnapshotFormat($appConfig->getValueString('files_snapshots', 'snap_format'));
+		$this->setMountFormats($appConfig->getValueArray('files_snapshots', 'mount_formats'));
 	}
 
 	public function setSnapshotFormat(string $snapshotFormat): void {
-		$this->snapshotFormat = $snapshotFormat;
-		if (str_contains($this->snapshotFormat, '/%snapshot%/')) {
-			[$this->snapshotPrefix, $this->snapshotPostfix] = explode('/%snapshot%/', $this->snapshotFormat);
-		} else {
-			$this->snapshotPrefix = null;
-			$this->snapshotPostfix = null;
-		}
+		$this->rawSnapshotFormat = $snapshotFormat;
+		$this->snapshotFormat = new SnapshotFormat($snapshotFormat, $this->dateFormat);
 	}
 
 	public function setDateFormat(string $dateFormat): void {
 		$this->dateFormat = $dateFormat;
+		$this->snapshotFormat = new SnapshotFormat($this->rawSnapshotFormat, $dateFormat);
 	}
 
 	/**
+	 * @param array $mountFormats list of ['source' => '/path/on/disk', 'format' => '/path/to/snapshots/%snapshot%/sub']
+	 */
+	public function setMountFormats(array $mountFormats): void {
+		$this->mountFormats = self::sanitizeMountFormats($mountFormats);
+	}
+
+	/**
+	 * @return list<array{source: string, format: string}>
+	 */
+	public static function sanitizeMountFormats(array $mountFormats): array {
+		$result = [];
+		foreach ($mountFormats as $mountFormat) {
+			if (!is_array($mountFormat)) {
+				continue;
+			}
+			$source = trim((string)($mountFormat['source'] ?? ''));
+			$format = trim((string)($mountFormat['format'] ?? ''));
+			if ($source === '' || $source[0] !== '/' || !str_contains($format, '%snapshot%')) {
+				continue;
+			}
+			$result[] = ['source' => self::normalizePath($source), 'format' => $format];
+		}
+		return $result;
+	}
+
+	public function setDataDirectory(string $dataDirectory): void {
+		$this->dataDirectory = $dataDirectory === '' ? null : self::normalizePath($dataDirectory);
+	}
+
+	private static function normalizePath(string $path): string {
+		$path = rtrim((string)preg_replace('#/{2,}#', '/', $path), '/');
+		return $path === '' ? '/' : $path;
+	}
+
+	/**
+	 * List the snapshots of the Nextcloud data directory
+	 *
 	 * @return Traversable<Snapshot>
 	 */
 	public function listAllSnapshots(): Traversable {
-		if ($this->snapshotPrefix === null) {
-			return;
-		}
-		foreach (glob($this->snapshotPrefix, GLOB_ONLYDIR) as $dir) {
-			$dh = opendir($dir);
-			while ($file = readdir($dh)) {
-				$path = $dir . '/' . $file;
-				if ($file[0] !== '.' && is_dir($path) && is_dir($path . '/' . $this->snapshotPostfix)) {
-					yield new Snapshot($path . '/' . $this->snapshotPostfix, $file, $this->dateFormat);
-				}
-			}
-			closedir($dh);
-		}
+		return $this->snapshotFormat->listSnapshots();
 	}
 
 	/**
+	 * List the snapshots containing a distinct version of a file in the Nextcloud data directory
+	 *
+	 * @param string $file path relative to the data directory
 	 * @return Snapshot[]
 	 */
 	public function listSnapshotsForFile(string $file): array {
-		if ($this->snapshotPrefix === null) {
-			return [];
-		}
+		return $this->listSnapshotsForLocation(new SnapshotLocation($this->snapshotFormat, $file));
+	}
+
+	/**
+	 * List the snapshots containing a distinct version of a file, oldest first
+	 *
+	 * @return Snapshot[]
+	 */
+	public function listSnapshotsForLocation(SnapshotLocation $location): array {
+		$file = $location->relativePath;
 		$lastMtime = 0;
-		$allSnapshots = array_filter(iterator_to_array($this->listAllSnapshots()), function (Snapshot $snapshot) use ($file) {
+		$allSnapshots = array_filter(iterator_to_array($location->format->listSnapshots(), false), function (Snapshot $snapshot) use ($file) {
 			return $snapshot->hasFile($file);
 		});
 
@@ -94,11 +130,58 @@ class SnapshotManager {
 		}));
 	}
 
+	/**
+	 * Get a snapshot of the Nextcloud data directory
+	 */
 	public function getSnapshot(string $id): ?Snapshot {
-		if ($this->snapshotPrefix === null) {
-			return null;
+		return $this->snapshotFormat->getSnapshot($id);
+	}
+
+	/**
+	 * Find where the snapshots for a file or folder on the local filesystem are stored
+	 *
+	 * The configured locations (the data directory and any additional mount formats) are tried,
+	 * using the one with the longest matching source path.
+	 *
+	 * @param string $path absolute path on the local filesystem
+	 */
+	public function resolve(string $path): ?SnapshotLocation {
+		$path = self::normalizePath($path);
+
+		$candidates = $this->mountFormats;
+		if ($this->dataDirectory !== null && $this->snapshotFormat->isValid()) {
+			$candidates[] = ['source' => $this->dataDirectory, 'format' => $this->rawSnapshotFormat];
 		}
-		$path = $this->snapshotPrefix . '/' . $id . '/' . $this->snapshotPostfix;
-		return is_dir($path) ? new Snapshot($path, $id, $this->dateFormat) : null;
+
+		$best = null;
+		$bestRelative = '';
+		foreach ($candidates as $candidate) {
+			$relative = self::getRelativePath($candidate['source'], $path);
+			if ($relative !== null && ($best === null || strlen($candidate['source']) > strlen($best['source']))) {
+				$best = $candidate;
+				$bestRelative = $relative;
+			}
+		}
+		if ($best !== null) {
+			$snapshotFormat = new SnapshotFormat($best['format'], $this->dateFormat);
+			if ($snapshotFormat->isValid()) {
+				return new SnapshotLocation($snapshotFormat, $bestRelative);
+			}
+		}
+
+		return null;
+	}
+
+	private static function getRelativePath(string $root, string $path): ?string {
+		if ($root === '/') {
+			return ltrim($path, '/');
+		}
+		if ($path === $root) {
+			return '';
+		}
+		if (str_starts_with($path, $root . '/')) {
+			return substr($path, strlen($root) + 1);
+		}
+		return null;
 	}
 }

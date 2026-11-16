@@ -26,6 +26,7 @@ namespace OCA\Files_Snapshots\Versions;
 use OC\Files\Node\Node;
 use OC\Files\Storage\Local;
 use OCA\Files_Snapshots\Snapshot;
+use OCA\Files_Snapshots\SnapshotLocation;
 use OCA\Files_Snapshots\SnapshotManager;
 use OCA\Files_Versions\Versions\IVersion;
 use OCA\Files_Versions\Versions\IVersionBackend;
@@ -41,19 +42,49 @@ class SnapshotVersionBackend implements IVersionBackend {
 	) {
 	}
 
+	/**
+	 * Use snapshots for local storages (home folders, external storage, shares) that have snapshots,
+	 * other storages keep using their regular versions.
+	 */
 	public function useBackendForStorage(IStorage $storage): bool {
-		return true;
+		$root = $this->getLocalPath($storage, '');
+		return $root !== null && $this->versionProvider->resolve($root) !== null;
 	}
 
-	public function getVersionsForFile(IUser $user, FileInfo $file): array {
-		$snapshots = $this->versionProvider->listSnapshotsForFile($user->getUID() . '/' . $file->getInternalPath());
+	/**
+	 * Get the path on the local filesystem for a file, without copying files from non-local storages
+	 */
+	private function getLocalPath(IStorage $storage, string $internalPath): ?string {
+		if (!$storage->instanceOfStorage(Local::class)) {
+			return null;
+		}
+		$path = $storage->getLocalFile($internalPath);
+		return is_string($path) ? $path : null;
+	}
 
-		return array_map(function (Snapshot $snapshot) use ($file, $user) {
+	private function getLocation(FileInfo $file): ?SnapshotLocation {
+		$storage = $file->getStorage();
+		$path = $this->getLocalPath($storage, $file->getInternalPath());
+		return $path === null ? null : $this->versionProvider->resolve($path);
+	}
+
+	/**
+	 * @return SnapshotVersion[]
+	 */
+	public function getVersionsForFile(IUser $user, FileInfo $file): array {
+		$location = $this->getLocation($file);
+		if ($location === null) {
+			return [];
+		}
+		$snapshots = $this->versionProvider->listSnapshotsForLocation($location);
+
+		return array_map(function (Snapshot $snapshot) use ($file, $user, $location) {
 			return new SnapshotVersion(
 				$this,
 				$snapshot,
 				$file,
-				$user
+				$user,
+				$location->relativePath,
 			);
 		}, $snapshots);
 	}
@@ -83,20 +114,19 @@ class SnapshotVersionBackend implements IVersionBackend {
 	}
 
 	public function getVersionFile(IUser $user, FileInfo $sourceFile, $revision): File {
-		$snapshot = null;
-		$snapshots = $this->getVersionsForFile($user, $sourceFile);
-		foreach ($snapshots as $fileSnapshot) {
-			if ($fileSnapshot->getRevisionId() === $revision) {
-				$snapshot = $fileSnapshot;
+		$version = null;
+		foreach ($this->getVersionsForFile($user, $sourceFile) as $fileVersion) {
+			if ((string)$fileVersion->getRevisionId() === (string)$revision) {
+				$version = $fileVersion;
 			}
 		}
-		if (!$snapshot) {
+		if (!$version) {
 			throw new NotFoundException("No snapshot found for revision $revision");
 		}
 
-		return new SnapshotPreviewFile($sourceFile, function () use ($sourceFile, $revision, $user) {
-			return $this->versionProvider->getSnapshot($revision)->readFile($user->getUID() . '/' . $sourceFile->getInternalPath());
-		}, $snapshot);
+		return new SnapshotPreviewFile($sourceFile, function () use ($version) {
+			return $version->getSnapshot()->readFile($version->getVersionPath());
+		}, $version);
 	}
 
 	public function getRevision(Node $node): int {

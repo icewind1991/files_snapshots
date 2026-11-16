@@ -36,3 +36,32 @@
 #files_snapshots .error {
 	color: var(--color-error);
 }
+
+/* additional snapshot locations */
+
+#files_snapshots table.mount-formats th,
+#files_snapshots table.mount-formats td {
+	padding: 4px 1em 4px 0;
+}
+
+#files_snapshots table.mount-formats th {
+	text-align: start;
+	font-weight: bold;
+}
+
+#files_snapshots table.mount-formats:not(:has(tbody tr)) thead {
+	display: none;
+}
+
+#files_snapshots table.mount-formats input[type='text'] {
+	width: 320px;
+}
+
+#files_snapshots table.mount-formats td.mount-status {
+	white-space: nowrap;
+	opacity: .7;
+}
+
+#files_snapshots table.mount-formats td.mount-status.error {
+	opacity: 1;
+}

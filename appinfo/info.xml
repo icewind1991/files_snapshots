@@ -30,5 +30,6 @@
 
 	<versions>
 		<backend for="OC\Files\Storage\Home">OCA\Files_Snapshots\Versions\SnapshotVersionBackend</backend>
+		<backend for="OC\Files\Storage\Local">OCA\Files_Snapshots\Versions\SnapshotVersionBackend</backend>
 	</versions>
 </info>
