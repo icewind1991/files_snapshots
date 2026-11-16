@@ -15,4 +15,6 @@ if (file_exists(__DIR__ . '/../../../tests/bootstrap.php')) {
 
 OC_App::loadApp('files_snapshots');
 
+require_once __DIR__ . '/fixtures/TestSnapshotManager.php';
+
 OC_Hook::clear();

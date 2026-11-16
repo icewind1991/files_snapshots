@@ -41,6 +41,10 @@ class Admin implements ISettings {
 			'snapshot_format' => $this->appConfig->getValueString('files_snapshots', 'snap_format'),
 			'date_format' => $this->appConfig->getValueString('files_snapshots', 'date_format', 'Y-m-d_H:i:s'),
 			'mount_formats' => SnapshotManager::sanitizeMountFormats($this->appConfig->getValueArray('files_snapshots', 'mount_formats')),
+			'autodetect' => $this->appConfig->getValueBool('files_snapshots', 'autodetect'),
+			'autodetect_patterns' => SnapshotManager::sanitizeAutodetectPatterns(
+				$this->appConfig->getValueArray('files_snapshots', 'autodetect_patterns', SnapshotManager::DEFAULT_AUTODETECT_PATTERNS)
+			),
 		];
 
 		return new TemplateResponse('files_snapshots', 'settings', $parameters);

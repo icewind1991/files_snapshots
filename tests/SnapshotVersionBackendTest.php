@@ -67,13 +67,7 @@ class SnapshotVersionBackendTest extends TestCase {
 		file_put_contents($this->baseDir . '/Plain/notes.txt', 'plain');
 	}
 
-	/**
-	 * @param bool $withSnapshots configure the location of the snapshots of the "Michele" storage
-	 */
-	private function getBackend(bool $withSnapshots, array $mountFormats = []): SnapshotVersionBackend {
-		if ($withSnapshots) {
-			$mountFormats[] = ['source' => $this->baseDir . '/Michele', 'format' => $this->baseDir . '/Michele/.zfs/snapshot/%snapshot%'];
-		}
+	private function getBackend(bool $autodetect, array $mountFormats = [], array $autodetectPatterns = SnapshotManager::DEFAULT_AUTODETECT_PATTERNS): SnapshotVersionBackend {
 		$appConfig = $this->createMock(IAppConfig::class);
 		$appConfig->method('getValueString')
 			->willReturnCallback(fn ($_app, $key, $default = '') => match ($key) {
@@ -81,10 +75,16 @@ class SnapshotVersionBackendTest extends TestCase {
 				default => $default,
 			});
 		$appConfig->method('getValueArray')
-			->willReturnCallback(fn ($_app, $key, $default = []) => $key === 'mount_formats' ? $mountFormats : $default);
+			->willReturnCallback(fn ($_app, $key, $default = []) => match ($key) {
+				'mount_formats' => $mountFormats,
+				'autodetect_patterns' => $autodetectPatterns,
+				default => $default,
+			});
+		$appConfig->method('getValueBool')
+			->willReturnCallback(fn ($_app, $key, $default = false) => $key === 'autodetect' ? $autodetect : $default);
 		$config = $this->createMock(IConfig::class);
 		$config->method('getSystemValueString')->willReturn('/nonexistent/data');
-		return new SnapshotVersionBackend(new SnapshotManager($appConfig, $config));
+		return new SnapshotVersionBackend(new TestSnapshotManager($appConfig, $config));
 	}
 
 	private function getFile(IStorage $storage, string $internalPath): FileInfo {

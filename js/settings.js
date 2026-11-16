@@ -51,6 +51,8 @@
 		}
 		var format = document.getElementById('format');
 		var dateFormat = document.getElementById('date_format');
+		var autodetect = document.getElementById('autodetect');
+		var autodetectPatterns = document.getElementById('autodetect_patterns');
 		var mountBody = form.querySelector('table.mount-formats tbody');
 		var resultTable = form.querySelector('table.result');
 		var resultBody = form.querySelector('table.result tbody');
@@ -74,6 +76,8 @@
 				snapshotFormat: format.value,
 				dateFormat: dateFormat.value,
 				mountFormats: getMountFormats(),
+				autodetect: autodetect.checked,
+				autodetectPatterns: autodetectPatterns.value,
 			};
 		}
 
@@ -85,7 +89,8 @@
 		form.addEventListener('submit', function (event) {
 			event.preventDefault();
 			showStatus(saveStatus, translate('Saving…'));
-			post('apps/files_snapshots/settings/save', getSettings()).then(function () {
+			post('apps/files_snapshots/settings/save', getSettings()).then(function (saved) {
+				autodetectPatterns.value = saved.autodetectPatterns.join('\n');
 				showStatus(saveStatus, translate('Saved'));
 			}, function (error) {
 				showStatus(saveStatus, translate('Failed to save settings: {error}', {error: error.message}), true);

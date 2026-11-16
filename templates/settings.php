@@ -63,6 +63,24 @@ style('files_snapshots', 'settings');
 		</tbody>
 	</table>
 	<button type="button" class="add-mount-format"><?php p($l->t('Add location')); ?></button>
+	<h3><?php p($l->t('Automatic detection')); ?></h3>
+	<p>
+		<input type="checkbox" class="checkbox" id="autodetect" <?php if ($_['autodetect']) {
+			p('checked');
+		} ?>/>
+		<label for="autodetect"><?php p($l->t('Automatically detect snapshot directories')); ?></label>
+	</p>
+	<p class="settings-hint"><?php p($l->t('For local storages without a configured location, search the folder of each file and its parent folders for one of these snapshot directories, one per line. The first folder that contains one is used.')); ?></p>
+	<textarea id="autodetect_patterns" rows="5" spellcheck="false"><?php p(implode("\n", $_['autodetect_patterns'])); ?></textarea>
+	<p class="settings-hint">
+		<?php p($l->t('Examples:')); ?>
+		<code>.zfs/snapshot/%snapshot%</code> (ZFS),
+		<code>.snapshots/%snapshot%/snapshot</code> (btrfs/snapper),
+		<code>.snapshot/%snapshot%</code> (NetApp),
+		<code>.snap/%snapshot%</code> (CephFS),
+		<code>#snapshot/%snapshot%</code> (Synology),
+		<code>@Recently-Snapshot/%snapshot%</code> (QNAP)
+	</p>
 	<p>
 		<input type="submit" value="<?php p($l->t('Save')); ?>"/>
 		<span id="save_status" class="msg"></span>

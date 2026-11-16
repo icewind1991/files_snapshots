@@ -28,6 +28,7 @@ use OCA\Files_Sharing\External\MountProvider as ExternalMountProvider;
 use OCA\Files_Sharing\ISharedStorage;
 use OCA\Files_Sharing\MountProvider;
 use OCA\Files_Snapshots\SnapshotManager;
+use OCA\Files_Snapshots\Tests\TestSnapshotManager;
 use OCA\Files_Snapshots\Versions\SnapshotVersion;
 use OCA\Files_Snapshots\Versions\SnapshotVersionBackend;
 use OCP\Constants;
@@ -152,7 +153,7 @@ class SharesAndExternalStorageTest extends TestCase {
 		$appConfig->method('getValueArray')->willReturnCallback(fn ($_app, $_key, $default = []) => $default);
 		$appConfig->method('getValueBool')->willReturnCallback(fn ($_app, $_key, $default = false) => $default);
 		// the real data directory, so the owner's home storage matches the snapshot format
-		return new SnapshotManager($appConfig, Server::get(IConfig::class));
+		return new TestSnapshotManager($appConfig, Server::get(IConfig::class));
 	}
 
 	private function getUser(string $uid): IUser {

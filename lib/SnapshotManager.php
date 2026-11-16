@@ -33,6 +33,11 @@ class SnapshotManager {
 	private ?string $dataDirectory;
 	/** @var list<array{source: string, format: string}> */
 	private array $mountFormats = [];
+	private bool $autodetect = false;
+	/** @var list<string> */
+	private array $autodetectPatterns = self::DEFAULT_AUTODETECT_PATTERNS;
+	/** @var array<string, ?array{root: string, pattern: string}> cache of directory => detected snapshot directory */
+	private array $autodetectCache = [];
 
 	/**
 	 * Placeholder in the source of an additional location that matches a single folder name, such as a user id,
@@ -40,11 +45,23 @@ class SnapshotManager {
 	 */
 	public const USER_PLACEHOLDER = '%user%';
 
+	/**
+	 * Snapshot directories that are searched for in every parent directory of a file, relative to that directory
+	 */
+	public const DEFAULT_AUTODETECT_PATTERNS = [
+		'.zfs/snapshot/%snapshot%', // zfs
+		'.snapshots/%snapshot%/snapshot', // btrfs with snapper
+		'.snapshot/%snapshot%', // NetApp and other NAS systems
+		'.snap/%snapshot%', // CephFS
+	];
+
 	public function __construct(IAppConfig $appConfig, IConfig $config) {
 		$this->setDataDirectory($config->getSystemValueString('datadirectory'));
 		$this->setDateFormat($appConfig->getValueString('files_snapshots', 'date_format', 'Y-m-d_H:i:s'));
 		$this->setSnapshotFormat($appConfig->getValueString('files_snapshots', 'snap_format'));
 		$this->setMountFormats($appConfig->getValueArray('files_snapshots', 'mount_formats'));
+		$this->setAutodetect($appConfig->getValueBool('files_snapshots', 'autodetect'));
+		$this->setAutodetectPatterns($appConfig->getValueArray('files_snapshots', 'autodetect_patterns', self::DEFAULT_AUTODETECT_PATTERNS));
 	}
 
 	public function setSnapshotFormat(string $snapshotFormat): void {
@@ -83,6 +100,43 @@ class SnapshotManager {
 				continue;
 			}
 			$result[] = ['source' => self::normalizePath($source), 'format' => $format];
+		}
+		return $result;
+	}
+
+	public function setAutodetect(bool $autodetect): void {
+		$this->autodetect = $autodetect;
+	}
+
+	public function setAutodetectPatterns(array $patterns): void {
+		$this->autodetectPatterns = self::sanitizeAutodetectPatterns($patterns);
+		$this->autodetectCache = [];
+	}
+
+	/**
+	 * Patterns need to be relative paths with a non-empty directory before `%snapshot%`
+	 *
+	 * @return list<string>
+	 */
+	public static function sanitizeAutodetectPatterns(array $patterns): array {
+		$result = [];
+		foreach ($patterns as $pattern) {
+			if (!is_string($pattern)) {
+				continue;
+			}
+			$pattern = trim(trim($pattern), '/');
+			$parts = explode('/', $pattern);
+			$snapshotIndex = array_search('%snapshot%', $parts, true);
+			if (
+				$snapshotIndex === false || $snapshotIndex === 0
+				|| in_array('..', $parts, true) || in_array('.', $parts, true) || in_array('', $parts, true)
+				|| substr_count($pattern, '%snapshot%') !== 1
+			) {
+				continue;
+			}
+			if (!in_array($pattern, $result, true)) {
+				$result[] = $pattern;
+			}
 		}
 		return $result;
 	}
@@ -150,8 +204,9 @@ class SnapshotManager {
 	/**
 	 * Find where the snapshots for a file or folder on the local filesystem are stored
 	 *
-	 * The configured locations (the data directory and any additional mount formats) are tried,
-	 * using the one with the longest matching source path.
+	 * Configured locations (the data directory and any additional mount formats) are tried first,
+	 * using the one with the longest matching source path. If none match and auto-detection is enabled
+	 * the nearest parent directory containing a snapshot directory matching one of the patterns is used.
 	 *
 	 * @param string $path absolute path on the local filesystem
 	 */
@@ -177,6 +232,16 @@ class SnapshotManager {
 			$snapshotFormat = new SnapshotFormat($format, $this->dateFormat);
 			if ($snapshotFormat->isValid()) {
 				return new SnapshotLocation($snapshotFormat, $best['relative']);
+			}
+		}
+
+		if ($this->autodetect) {
+			$detected = $this->detectSnapshotDirectory($path);
+			if ($detected !== null) {
+				$relative = self::getRelativePath($detected['root'], $path);
+				if ($relative !== null) {
+					return new SnapshotLocation($this->getDetectedFormat($detected['root'], $detected['pattern']), $relative, true);
+				}
 			}
 		}
 
@@ -216,5 +281,122 @@ class SnapshotManager {
 			return substr($path, strlen($root) + 1);
 		}
 		return null;
+	}
+
+	/**
+	 * Snapshot format for an auto-detected snapshot directory, which only uses real snapshots
+	 *
+	 * Users can create directories with the same name as a snapshot directory, or entries inside a snapshot
+	 * directory they can write to, through Nextcloud. Those would make arbitrary files show up as versions of other
+	 * files, or hide the real snapshots. Real snapshots are separate filesystems (zfs mounts every snapshot, btrfs
+	 * snapshots are subvolumes), so they are on a different device than the directory containing them, while
+	 * directories created through Nextcloud are always on the same device as their parent. Every snapshot is checked.
+	 * Symlinks are not followed, they could point to other filesystems.
+	 * Locations configured by the admin are not checked.
+	 */
+	private function getDetectedFormat(string $root, string $pattern): SnapshotFormat {
+		return SnapshotFormat::forPattern($root, $pattern, $this->dateFormat,
+			fn (Snapshot $snapshot): bool => !self::containsSymlink($root, $snapshot->getPath())
+				&& $this->isSeparateFilesystem($snapshot->getPath(), dirname($snapshot->getPath())));
+	}
+
+	/**
+	 * Whether any part of a path below a directory is a symlink
+	 */
+	protected static function containsSymlink(string $root, string $path): bool {
+		$relative = self::getRelativePath(self::normalizePath($root), self::normalizePath($path));
+		if ($relative === null) {
+			return true;
+		}
+		$current = self::normalizePath($root);
+		foreach (explode('/', $relative) as $part) {
+			if ($part === '') {
+				continue;
+			}
+			$current = ($current === '/' ? '' : $current) . '/' . $part;
+			if (is_link($current)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Whether an auto-detected snapshot directory contains (at least one) real snapshot, see getDetectedFormat()
+	 */
+	private function containsSnapshotFilesystems(string $root, string $pattern): bool {
+		foreach ($this->getDetectedFormat($root, $pattern)->listSnapshots() as $_snapshot) {
+			return true;
+		}
+		return false;
+	}
+
+	/**
+	 * Whether a path is on a different device than its parent directory
+	 */
+	protected function isSeparateFilesystem(string $path, string $parent): bool {
+		// the trailing slash makes sure an automounted snapshot (zfs) is mounted before checking
+		$pathStat = @stat(rtrim($path, '/') . '/');
+		$parentStat = @stat($parent);
+		if ($pathStat === false || $parentStat === false) {
+			return false;
+		}
+		return $pathStat['dev'] !== $parentStat['dev'];
+	}
+
+	/**
+	 * Whether a directory is on a different device than its parent, meaning it is the root of a mounted filesystem
+	 */
+	protected function isFilesystemRoot(string $dir, string $parent): bool {
+		$dirStat = @stat($dir);
+		$parentStat = @stat($parent);
+		if ($dirStat === false || $parentStat === false) {
+			return false;
+		}
+		return $dirStat['dev'] !== $parentStat['dev'];
+	}
+
+	/**
+	 * Find the nearest parent directory of a path that contains a snapshot directory
+	 *
+	 * Snapshot directories are found by checking for the part of each pattern before `%snapshot%`,
+	 * this also works for hidden directories such as zfs with `snapdir=hidden`.
+	 *
+	 * Only snapshot directories containing real snapshots are used, see getDetectedFormat().
+	 *
+	 * The search stops at the root of the filesystem containing the path (where the device changes), since snapshots
+	 * of a parent filesystem don't contain the files of another filesystem mounted inside it, only the empty
+	 * directory it is mounted on. This happens for nested zfs datasets and btrfs subvolumes.
+	 *
+	 * @return ?array{root: string, pattern: string}
+	 */
+	public function detectSnapshotDirectory(string $path): ?array {
+		$path = self::normalizePath($path);
+		$dir = is_dir($path) ? $path : dirname($path);
+		$visited = [];
+		while (true) {
+			if (array_key_exists($dir, $this->autodetectCache)) {
+				$found = $this->autodetectCache[$dir];
+				break;
+			}
+			$visited[] = $dir;
+			$found = null;
+			foreach ($this->autodetectPatterns as $pattern) {
+				$snapshotDir = explode('/%snapshot%', $pattern, 2)[0];
+				if (is_dir(($dir === '/' ? '' : $dir) . '/' . $snapshotDir) && $this->containsSnapshotFilesystems($dir, $pattern)) {
+					$found = ['root' => $dir, 'pattern' => $pattern];
+					break 2;
+				}
+			}
+			$parent = dirname($dir);
+			if ($parent === $dir || $this->isFilesystemRoot($dir, $parent)) {
+				break;
+			}
+			$dir = $parent;
+		}
+		foreach ($visited as $visitedDir) {
+			$this->autodetectCache[$visitedDir] = $found;
+		}
+		return $found;
 	}
 }

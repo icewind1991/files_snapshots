@@ -65,3 +65,11 @@
 #files_snapshots table.mount-formats td.mount-status.error {
 	opacity: 1;
 }
+
+/* automatic detection */
+
+#files_snapshots textarea#autodetect_patterns {
+	width: 400px;
+	max-width: calc(100% - 10px);
+	font-family: monospace;
+}

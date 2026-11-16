@@ -29,6 +29,8 @@ class SnapshotLocation {
 		public readonly SnapshotFormat $format,
 		/** path of the file relative to the root of each snapshot */
 		public readonly string $relativePath,
+		/** whether the location was found by auto-detection instead of configuration */
+		public readonly bool $autodetected = false,
 	) {
 	}
 }

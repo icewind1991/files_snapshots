@@ -85,7 +85,9 @@ class SnapshotManagerTest extends TestCase {
 		string $snapshotFormat,
 		string $dateFormat = 'Y-m-d_H:i:s',
 		array $mountFormats = [],
+		bool $autodetect = false,
 		string $dataDirectory = '/var/www/data',
+		array $autodetectPatterns = SnapshotManager::DEFAULT_AUTODETECT_PATTERNS,
 	): SnapshotManager {
 		$appConfig = $this->createMock(IAppConfig::class);
 		$appConfig->method('getValueString')
@@ -95,11 +97,17 @@ class SnapshotManagerTest extends TestCase {
 				default => $default,
 			});
 		$appConfig->method('getValueArray')
-			->willReturnCallback(fn ($_app, $key, $default = []) => $key === 'mount_formats' ? $mountFormats : $default);
+			->willReturnCallback(fn ($_app, $key, $default = []) => match ($key) {
+				'mount_formats' => $mountFormats,
+				'autodetect_patterns' => $autodetectPatterns,
+				default => $default,
+			});
+		$appConfig->method('getValueBool')
+			->willReturnCallback(fn ($_app, $key, $default = false) => $key === 'autodetect' ? $autodetect : $default);
 		$config = $this->createMock(IConfig::class);
 		$config->method('getSystemValueString')
 			->willReturnCallback(fn ($key, $default = '') => $key === 'datadirectory' ? $dataDirectory : $default);
-		return new SnapshotManager($appConfig, $config);
+		return new TestSnapshotManager($appConfig, $config);
 	}
 
 	public function testListSnapshotsNotConfigured() {
@@ -185,7 +193,7 @@ class SnapshotManagerTest extends TestCase {
 	}
 
 	public function testResolveDataDirectory() {
-		$manager = $this->getManager('/' . $this->baseDir . '/pre1/%snapshot%/sub', '*Y-m-d_H:i:s*', [], '/var/www/data/');
+		$manager = $this->getManager('/' . $this->baseDir . '/pre1/%snapshot%/sub', '*Y-m-d_H:i:s*', [], false, '/var/www/data/');
 
 		$location = $manager->resolve('/var/www/data/test.txt');
 		$this->assertNotNull($location);
@@ -212,7 +220,7 @@ class SnapshotManagerTest extends TestCase {
 			['source' => "$base/external/", 'format' => "$base/external/.zfs/snapshot/%snapshot%"],
 			['source' => 'relative/path', 'format' => '/ignored/%snapshot%'],
 			['source' => "$base/invalid", 'format' => '/missing-placeholder'],
-		], $base . '/data');
+		], false, $base . '/data');
 
 		$location = $manager->resolve("$base/external/dir/file.txt");
 		$this->assertNotNull($location);
@@ -227,6 +235,69 @@ class SnapshotManagerTest extends TestCase {
 		$other = $manager->resolve('/some/other/file.txt');
 		$this->assertNotNull($other);
 		$this->assertEquals('some/other/file.txt', $other->relativePath);
+	}
+
+	public function testResolveZfsAutodetect() {
+		$base = $this->baseDir;
+		$this->createZfsDataset("$base/pool/Michele", 'Documents/report.odt', [
+			'zfs-auto-snap_daily-2026-11-14-1325' => 'zero',
+			'zfs-auto-snap_hourly-2026-11-15-1300' => 'one',
+			'zfs-auto-snap_hourly-2026-11-15-1400' => 'one', // unchanged, mtime is updated below
+		]);
+		touch("$base/pool/Michele/.zfs/snapshot/zfs-auto-snap_hourly-2026-11-15-1400/Documents/report.odt", 110);
+
+		$manager = $this->getManager('', '*-*-*-Y-m-d-Hi', [], false);
+		$this->assertNull($manager->resolve("$base/pool/Michele/Documents/report.odt"));
+
+		$manager = $this->getManager('', '*-*-*-Y-m-d-Hi', [], true);
+		$expected = ['root' => rtrim($base, '/') . '/pool/Michele', 'pattern' => '.zfs/snapshot/%snapshot%'];
+		$this->assertEquals($expected, $manager->detectSnapshotDirectory("$base/pool/Michele/Documents/report.odt"));
+		$this->assertEquals($expected, $manager->detectSnapshotDirectory("$base/pool/Michele"));
+		$this->assertNull($manager->detectSnapshotDirectory("$base/pool"));
+
+		// not detected when the pattern is not enabled
+		$manager = $this->getManager('', '*-*-*-Y-m-d-Hi', [], true, autodetectPatterns: ['.snapshots/%snapshot%/snapshot']);
+		$this->assertNull($manager->resolve("$base/pool/Michele/Documents/report.odt"));
+		$manager = $this->getManager('', '*-*-*-Y-m-d-Hi', [], true);
+
+		$location = $manager->resolve("$base/pool/Michele/Documents/report.odt");
+		$this->assertNotNull($location);
+		$this->assertEquals('Documents/report.odt', $location->relativePath);
+		$snapshots = $manager->listSnapshotsForLocation($location);
+		$this->assertEquals(['zfs-auto-snap_daily-2026-11-14-1325', 'zfs-auto-snap_hourly-2026-11-15-1300'], array_map(fn (Snapshot $snapshot) => $snapshot->getName(), $snapshots));
+		$this->assertEquals('zero', stream_get_contents($snapshots[0]->readFile($location->relativePath)));
+
+		// storage root resolves to the dataset itself
+		$root = $manager->resolve("$base/pool/Michele/");
+		$this->assertNotNull($root);
+		$this->assertEquals('', $root->relativePath);
+	}
+
+	public function testResolveConfiguredBeforeAutodetect() {
+		$base = $this->baseDir;
+		$this->createZfsDataset("$base/pool/data", 'admin/files/test.txt', [
+			'snap1' => 'old',
+		]);
+		mkdir("$base/manual/snap2/admin/files", 0777, true);
+		file_put_contents("$base/manual/snap2/admin/files/test.txt", 'manual');
+
+		$manager = $this->getManager("$base/manual/%snapshot%", 'Y-m-d', [], true, "$base/pool/data");
+		$location = $manager->resolve("$base/pool/data/admin/files/test.txt");
+		$this->assertNotNull($location);
+		$snapshots = $manager->listSnapshotsForLocation($location);
+		$this->assertCount(1, $snapshots);
+		$this->assertEquals('snap2', $snapshots[0]->getName());
+	}
+
+	public function testZfsDatasetWithGlobCharacters() {
+		$base = $this->baseDir;
+		$this->createZfsDataset("$base/TV Series [HD]", 'show.mkv', [
+			'snap1' => 'old',
+		]);
+		$manager = $this->getManager('', 'Y-m-d', [], true);
+		$location = $manager->resolve("$base/TV Series [HD]/show.mkv");
+		$this->assertNotNull($location);
+		$this->assertCount(1, $manager->listSnapshotsForLocation($location));
 	}
 
 	public function testSymlinksOutOfSnapshotsAreNotFollowed() {
@@ -266,6 +337,56 @@ class SnapshotManagerTest extends TestCase {
 		$snapshot = $manager->getSnapshot('autosnap_2021-02-24_12:53:43_daily');
 		$this->assertNotNull($snapshot);
 		$this->assertEquals('autosnap_2021-02-24_12:53:43_daily', $snapshot->getName());
+	}
+
+	public function testAutodetectCephfs() {
+		$base = $this->baseDir;
+		// CephFS exposes .snap in every directory, the nearest one is used
+		mkdir("$base/ceph/.snap/daily/projects/a", 0777, true);
+		mkdir("$base/ceph/projects/a/.snap/daily", 0777, true);
+		file_put_contents("$base/ceph/projects/a/.snap/daily/file.txt", 'old');
+		file_put_contents("$base/ceph/projects/a/file.txt", 'new');
+
+		$manager = $this->getManager('', 'Y-m-d', [], true);
+		$location = $manager->resolve("$base/ceph/projects/a/file.txt");
+		$this->assertNotNull($location);
+		$this->assertEquals('file.txt', $location->relativePath);
+		$snapshots = $manager->listSnapshotsForLocation($location);
+		$this->assertCount(1, $snapshots);
+		$this->assertEquals('old', stream_get_contents($snapshots[0]->readFile('file.txt')));
+	}
+
+	public function testAutodetectPatternOrder() {
+		$base = $this->baseDir;
+		$this->createZfsDataset("$base/both", 'file.txt', ['zfs1' => 'zfs']);
+		mkdir("$base/both/.snapshot/netapp1", 0777, true);
+		file_put_contents("$base/both/.snapshot/netapp1/file.txt", 'netapp');
+
+		$manager = $this->getManager('', 'Y-m-d', [], true, autodetectPatterns: ['.snapshot/%snapshot%', '.zfs/snapshot/%snapshot%']);
+		$snapshots = $manager->listSnapshotsForLocation($manager->resolve("$base/both/file.txt"));
+		$this->assertEquals('netapp1', $snapshots[0]->getName());
+	}
+
+	public function testSanitizeAutodetectPatterns() {
+		$this->assertEquals([
+			'.zfs/snapshot/%snapshot%',
+			'.snapshots/%snapshot%/snapshot',
+			'#snapshot/%snapshot%',
+		], SnapshotManager::sanitizeAutodetectPatterns([
+			' /.zfs/snapshot/%snapshot%/ ',
+			'.snapshots/%snapshot%/snapshot',
+			'#snapshot/%snapshot%',
+			'.zfs/snapshot/%snapshot%', // duplicate
+			'%snapshot%', // would match any directory
+			'%snapshot%/data',
+			'../escape/%snapshot%',
+			'./.snap/%snapshot%',
+			'.snap//%snapshot%',
+			'.snap/%snapshot%/%snapshot%',
+			'.snap/prefix-%snapshot%',
+			'no-placeholder',
+			42,
+		]));
 	}
 
 	public function testUserPlaceholder() {
@@ -318,6 +439,40 @@ class SnapshotManagerTest extends TestCase {
 		$this->assertEquals('files/x', $manager->resolve("$base/home/bob/files/x")->relativePath);
 	}
 
+	public function testAutodetectStopsAtFilesystemRoot() {
+		$base = rtrim($this->baseDir, '/');
+		// snapshots of the parent dataset contain only the empty directory the child dataset is mounted on
+		mkdir("$base/pool/.zfs/snapshot/daily-2026-11-01/child", 0777, true);
+		mkdir("$base/pool/child/sub", 0777, true);
+		file_put_contents("$base/pool/child/sub/file.txt", 'data');
+
+		$appConfig = $this->createMock(IAppConfig::class);
+		$appConfig->method('getValueString')->willReturnCallback(fn ($_app, $_key, $default = '') => $default);
+		$appConfig->method('getValueArray')->willReturnCallback(fn ($_app, $_key, $default = []) => $default);
+		$appConfig->method('getValueBool')->willReturnCallback(fn ($_app, $key, $default = false) => $key === 'autodetect' ? true : $default);
+		$config = $this->createMock(IConfig::class);
+		$config->method('getSystemValueString')->willReturn('');
+
+		$manager = new class($appConfig, $config, "$base/pool/child") extends TestSnapshotManager {
+			public function __construct(
+				IAppConfig $appConfig,
+				IConfig $config,
+				private string $mountPoint,
+			) {
+				parent::__construct($appConfig, $config);
+			}
+
+			protected function isFilesystemRoot(string $dir, string $parent): bool {
+				return $dir === $this->mountPoint;
+			}
+		};
+		$this->assertNull($manager->resolve("$base/pool/child/sub/file.txt"));
+		$this->assertNull($manager->resolve("$base/pool/child"));
+
+		// without the mount, the parent snapshots are used
+		$this->assertNotNull($this->getManager('', 'Y-m-d', [], true)->resolve("$base/pool/child/sub/file.txt"));
+	}
+
 	public function testUserPlaceholderWithGlobCharacters() {
 		$base = rtrim($this->baseDir, '/');
 		foreach (['a[1]', 'a1', 'b*'] as $user) {
@@ -337,6 +492,144 @@ class SnapshotManagerTest extends TestCase {
 		}
 	}
 
+	public function testAutodetectIgnoresUserCreatedSnapshotDirectories() {
+		$base = rtrim($this->baseDir, '/');
+		// real (read-only) snapshots of the dataset
+		mkdir("$base/ds/.zfs/snapshot/daily-2026-11-01/shared/project", 0777, true);
+		file_put_contents("$base/ds/.zfs/snapshot/daily-2026-11-01/shared/project/report.txt", 'real old version');
+		mkdir("$base/ds/shared/project", 0777, true);
+		file_put_contents("$base/ds/shared/project/report.txt", 'current');
+
+		// a user with write access to the shared folder creates a fake snapshot directory through Nextcloud
+		mkdir("$base/ds/shared/project/.snapshot/2026-11-02", 0777, true);
+		file_put_contents("$base/ds/shared/project/.snapshot/2026-11-02/report.txt", 'malicious');
+		touch("$base/ds/shared/project/.snapshot/2026-11-02/" . TestSnapshotManager::USER_CREATED_MARKER);
+		// and an empty one, which would hide the real snapshots
+		mkdir("$base/ds/shared/.snap", 0777, true);
+
+		$manager = $this->getManager('', 'Y-m-d', [], true);
+		$location = $manager->resolve("$base/ds/shared/project/report.txt");
+		$this->assertNotNull($location);
+		$this->assertEquals('shared/project/report.txt', $location->relativePath, 'the real snapshots of the dataset are used');
+		$snapshots = $manager->listSnapshotsForLocation($location);
+		$this->assertCount(1, $snapshots);
+		$this->assertEquals('real old version', stream_get_contents($snapshots[0]->readFile($location->relativePath)));
+	}
+
+	public function testAutodetectChecksEverySnapshot() {
+		$base = rtrim($this->baseDir, '/');
+		// real snapshots, and fake ones created by a user in a snapshot directory they can write to,
+		// "0000" sorts before the real snapshots
+		foreach (['0000-fake' => true, 'daily-2026-11-01' => false, 'daily-2026-11-02' => false, 'zzzz-fake' => true] as $name => $fake) {
+			mkdir("$base/dataset/.zfs/snapshot/$name/docs", 0777, true);
+			file_put_contents("$base/dataset/.zfs/snapshot/$name/docs/a.txt", $name);
+			touch("$base/dataset/.zfs/snapshot/$name/docs/a.txt", 1000 + strlen($name) + ($fake ? 100 : 0));
+			if ($fake) {
+				touch("$base/dataset/.zfs/snapshot/$name/" . TestSnapshotManager::USER_CREATED_MARKER);
+			}
+		}
+		mkdir("$base/dataset/docs", 0777, true);
+
+		$manager = $this->getManager('', '*-Y-m-d', [], true);
+		$location = $manager->resolve("$base/dataset/docs/a.txt");
+		$this->assertNotNull($location);
+		$this->assertEquals(['daily-2026-11-01', 'daily-2026-11-02'], array_map(fn (Snapshot $snapshot) => $snapshot->getName(), iterator_to_array($location->format->listSnapshots(), false)));
+		$this->assertNull($location->format->getSnapshot('0000-fake'));
+		$this->assertNotNull($location->format->getSnapshot('daily-2026-11-01'));
+	}
+
+	public function testAutodetectSnapperWithFakeSnapshot() {
+		$base = rtrim($this->baseDir, '/');
+		// snapper: .snapshots is a separate subvolume, a user that can write to it could add a numbered snapshot
+		foreach ([1 => false, 999 => true] as $number => $fake) {
+			mkdir("$base/subvol/.snapshots/$number/snapshot/notes", 0777, true);
+			file_put_contents("$base/subvol/.snapshots/$number/info.xml", "<snapshot><date>2026-11-1$number 10:00:00</date></snapshot>");
+			file_put_contents("$base/subvol/.snapshots/$number/snapshot/notes/todo.txt", $fake ? 'fake' : 'real');
+			if ($fake) {
+				touch("$base/subvol/.snapshots/$number/snapshot/" . TestSnapshotManager::USER_CREATED_MARKER);
+			}
+		}
+		mkdir("$base/subvol/notes", 0777, true);
+
+		$manager = $this->getManager('', 'Y-m-d', [], true);
+		$location = $manager->resolve("$base/subvol/notes/todo.txt");
+		$this->assertNotNull($location);
+		$snapshots = $manager->listSnapshotsForLocation($location);
+		$this->assertCount(1, $snapshots);
+		$this->assertEquals('real', stream_get_contents($snapshots[0]->readFile($location->relativePath)));
+	}
+
+	public function testAutodetectIgnoresSymlinks() {
+		$base = rtrim($this->baseDir, '/');
+		// the snapshots of another user's dataset
+		mkdir("$base/other/.zfs/snapshot/daily-2026-11-01/docs", 0777, true);
+		file_put_contents("$base/other/.zfs/snapshot/daily-2026-11-01/docs/a.txt", 'other user');
+		$manager = $this->getManager('', 'Y-m-d', [], true);
+
+		// a symlink to them as snapshot directory
+		mkdir("$base/mine/docs", 0777, true);
+		symlink("$base/other/.zfs/snapshot", "$base/mine/.snapshot");
+		$this->assertNull($manager->resolve("$base/mine/docs/a.txt"));
+
+		// a symlink to one of them next to real snapshots
+		mkdir("$base/ds/.zfs/snapshot/daily-2026-11-02/docs", 0777, true);
+		mkdir("$base/ds/docs", 0777, true);
+		symlink("$base/other/.zfs/snapshot/daily-2026-11-01", "$base/ds/.zfs/snapshot/zz-link");
+		$location = $manager->resolve("$base/ds/docs/a.txt");
+		$this->assertNotNull($location);
+		$this->assertEquals(['daily-2026-11-02'], array_map(fn (Snapshot $snapshot) => $snapshot->getName(), iterator_to_array($location->format->listSnapshots(), false)));
+
+		// a symlink as the snapshot inside a snapper snapshot
+		mkdir("$base/subvolume/.snapshots/1", 0777, true);
+		mkdir("$base/subvolume/docs", 0777, true);
+		symlink("$base/other/.zfs/snapshot/daily-2026-11-01", "$base/subvolume/.snapshots/1/snapshot");
+		$this->assertNull($manager->resolve("$base/subvolume/docs/a.txt"));
+	}
+
+	public function testContainsSymlink() {
+		$base = rtrim($this->baseDir, '/');
+		mkdir("$base/plain/a/b", 0777, true);
+		symlink("$base/plain/a", "$base/plain/link");
+		$this->assertFalse(TestSnapshotManager::containsSymlinkOnDisk("$base/plain", "$base/plain/a/b"));
+		$this->assertFalse(TestSnapshotManager::containsSymlinkOnDisk("$base/plain", "$base/plain/"));
+		$this->assertTrue(TestSnapshotManager::containsSymlinkOnDisk("$base/plain", "$base/plain/link/b"));
+		// paths outside of the directory are never trusted
+		$this->assertTrue(TestSnapshotManager::containsSymlinkOnDisk("$base/plain", "$base/elsewhere"));
+	}
+
+	public function testConfiguredLocationsAreTrusted() {
+		$base = rtrim($this->baseDir, '/');
+		mkdir("$base/backup/b1", 0777, true);
+		touch("$base/backup/b1/" . TestSnapshotManager::USER_CREATED_MARKER);
+		file_put_contents("$base/backup/b1/file.txt", 'backup');
+		$manager = $this->getManager('', 'Y-m-d', [['source' => "$base/live", 'format' => "$base/backup/%snapshot%"]], true);
+		$this->assertCount(1, $manager->listSnapshotsForLocation($manager->resolve("$base/live/file.txt")));
+	}
+
+	public function testSnapshotFilesystemsOnDisk() {
+		$base = rtrim($this->baseDir, '/');
+		mkdir("$base/disk/.snapshot/s1", 0777, true);
+		mkdir("$base/disk/data", 0777, true);
+
+		$appConfig = $this->createMock(IAppConfig::class);
+		$appConfig->method('getValueString')->willReturnCallback(fn ($_app, $_key, $default = '') => $default);
+		$appConfig->method('getValueArray')->willReturnCallback(fn ($_app, $_key, $default = []) => $default);
+		$appConfig->method('getValueBool')->willReturnCallback(fn ($_app, $key, $default = false) => $key === 'autodetect' ? true : $default);
+		$config = $this->createMock(IConfig::class);
+		$config->method('getSystemValueString')->willReturn('');
+
+		// a directory created on the same filesystem is not a snapshot
+		$this->assertNull((new SnapshotManager($appConfig, $config))->resolve("$base/disk/data"));
+
+		$manager = new TestSnapshotManager($appConfig, $config);
+		$this->assertFalse($manager->isSeparateFilesystemOnDisk("$base/disk/.snapshot/s1", "$base/disk"));
+		$this->assertFalse($manager->isSeparateFilesystemOnDisk("$base/missing", "$base/disk"));
+		// /proc is a separate filesystem on Linux
+		if (is_dir('/proc/self')) {
+			$this->assertTrue($manager->isSeparateFilesystemOnDisk('/proc', '/'));
+		}
+	}
+
 	public function testSnapshotFormatEdgeCases() {
 		$invalid = new SnapshotFormat('/no/placeholder', 'Y-m-d');
 		$this->assertFalse($invalid->isValid());
@@ -345,5 +638,22 @@ class SnapshotManagerTest extends TestCase {
 
 		$format = new SnapshotFormat('/' . $this->baseDir . '/pre1/%snapshot%/sub', 'Y-m-d');
 		$this->assertNull($format->getSnapshot('does-not-exist'));
+	}
+
+	public function testFilesystemRootOnDisk() {
+		$base = rtrim($this->baseDir, '/');
+		$appConfig = $this->createMock(IAppConfig::class);
+		$appConfig->method('getValueString')->willReturnCallback(fn ($_app, $_key, $default = '') => $default);
+		$appConfig->method('getValueArray')->willReturnCallback(fn ($_app, $_key, $default = []) => $default);
+		$appConfig->method('getValueBool')->willReturnCallback(fn ($_app, $_key, $default = false) => $default);
+		$config = $this->createMock(IConfig::class);
+		$config->method('getSystemValueString')->willReturn('');
+		$manager = new TestSnapshotManager($appConfig, $config);
+
+		$this->assertFalse($manager->isFilesystemRootOnDisk("$base/pre1", $base));
+		$this->assertFalse($manager->isFilesystemRootOnDisk("$base/missing", $base));
+		if (is_dir('/proc/self')) {
+			$this->assertTrue($manager->isFilesystemRootOnDisk('/proc', '/'));
+		}
 	}
 }

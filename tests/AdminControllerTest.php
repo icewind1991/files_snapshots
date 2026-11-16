@@ -22,7 +22,6 @@ declare(strict_types=1);
 namespace OCA\Files_Snapshots\Tests;
 
 use OCA\Files_Snapshots\Controller\AdminController;
-use OCA\Files_Snapshots\SnapshotManager;
 use OCP\IAppConfig;
 use OCP\IConfig;
 use OCP\IRequest;
@@ -46,7 +45,7 @@ class AdminControllerTest extends TestCase {
 		}
 		$config = $this->createMock(IConfig::class);
 		$config->method('getSystemValueString')->willReturn('');
-		return new AdminController('files_snapshots', $this->createMock(IRequest::class), $appConfig, new SnapshotManager($appConfig, $config));
+		return new AdminController('files_snapshots', $this->createMock(IRequest::class), $appConfig, new TestSnapshotManager($appConfig, $config));
 	}
 
 	public function testSettings() {
@@ -70,6 +69,10 @@ class AdminControllerTest extends TestCase {
 			$saved[$app][$key] = $value;
 			return true;
 		});
+		$appConfig->method('setValueBool')->willReturnCallback(function ($app, $key, $value) use (&$saved) {
+			$saved[$app][$key] = $value;
+			return true;
+		});
 
 		$result = $this->getController($appConfig)->save(
 			'/data/.zfs/snapshot/%snapshot%',
@@ -80,18 +83,24 @@ class AdminControllerTest extends TestCase {
 				['source' => '/mnt/b', 'format' => '/no-placeholder'],
 				'invalid',
 			],
+			true,
+			" .zfs/snapshot/%snapshot% \n\n%snapshot%\n.snapshots/%snapshot%/snapshot\r\n../up/%snapshot%",
 		);
 
 		$expected = [
 			'snap_format' => '/data/.zfs/snapshot/%snapshot%',
 			'date_format' => '*-Y-m-d',
 			'mount_formats' => [['source' => '/mnt/a', 'format' => '/mnt/a/.zfs/snapshot/%snapshot%']],
+			'autodetect' => true,
+			'autodetect_patterns' => ['.zfs/snapshot/%snapshot%', '.snapshots/%snapshot%/snapshot'],
 		];
 		$this->assertEquals(['files_snapshots' => $expected], $saved);
 		$this->assertEquals([
 			'snapshotFormat' => $expected['snap_format'],
 			'dateFormat' => $expected['date_format'],
 			'mountFormats' => $expected['mount_formats'],
+			'autodetect' => true,
+			'autodetectPatterns' => $expected['autodetect_patterns'],
 		], $result);
 	}
 }

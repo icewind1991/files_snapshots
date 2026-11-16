@@ -21,6 +21,7 @@ declare(strict_types=1);
 
 namespace OCA\Files_Snapshots;
 
+use Closure;
 use Generator;
 
 /**
@@ -35,6 +36,8 @@ class SnapshotFormat {
 	public function __construct(
 		string $format,
 		private readonly string $dateFormat,
+		/** @var ?Closure(Snapshot): bool only use snapshots this returns true for */
+		private readonly ?Closure $filter = null,
 	) {
 		// allow the format to end in `%snapshot%` without a trailing slash
 		if (str_ends_with($format, '/%snapshot%')) {
@@ -43,6 +46,19 @@ class SnapshotFormat {
 		if (str_contains($format, '/%snapshot%/')) {
 			[$this->prefix, $this->postfix] = explode('/%snapshot%/', $format, 2);
 		}
+	}
+
+	/**
+	 * Snapshot format for an auto-detected snapshot directory
+	 *
+	 * @param string $root the directory containing the snapshot directory
+	 * @param string $pattern the snapshot directory relative to $root, such as `.zfs/snapshot/%snapshot%`
+	 * @param ?Closure(Snapshot): bool $filter only use snapshots this returns true for
+	 */
+	public static function forPattern(string $root, string $pattern, string $dateFormat, ?Closure $filter = null): self {
+		[$snapshotDir, $postfix] = array_pad(explode('/%snapshot%', $pattern, 2), 2, '');
+		$root = rtrim($root, '/');
+		return new self(self::escapeGlob($root . '/' . $snapshotDir) . '/%snapshot%/' . ltrim($postfix, '/'), $dateFormat, $filter);
 	}
 
 	public static function escapeGlob(string $path): string {
@@ -64,7 +80,10 @@ class SnapshotFormat {
 			foreach (scandir($dir) ?: [] as $file) {
 				$path = $dir . '/' . $file;
 				if ($file[0] !== '.' && is_dir($path) && is_dir($path . '/' . $this->postfix)) {
-					yield new Snapshot($path . '/' . $this->postfix, $file, $this->dateFormat);
+					$snapshot = new Snapshot($path . '/' . $this->postfix, $file, $this->dateFormat);
+					if ($this->filter === null || ($this->filter)($snapshot)) {
+						yield $snapshot;
+					}
 				}
 			}
 		}
@@ -77,7 +96,8 @@ class SnapshotFormat {
 		foreach (glob($this->prefix, GLOB_ONLYDIR) ?: [] as $dir) {
 			$path = $dir . '/' . $id . '/' . $this->postfix;
 			if (is_dir($path)) {
-				return new Snapshot($path, $id, $this->dateFormat);
+				$snapshot = new Snapshot($path, $id, $this->dateFormat);
+				return $this->filter === null || ($this->filter)($snapshot) ? $snapshot : null;
 			}
 		}
 		return null;

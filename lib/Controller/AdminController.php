@@ -59,15 +59,33 @@ class AdminController extends Controller {
 		return array_combine($names, $dates);
 	}
 
-	public function save(string $snapshotFormat, string $dateFormat, array $mountFormats = []): array {
+	/**
+	 * @return list<string>
+	 */
+	private static function splitLines(string $text): array {
+		return array_values(array_filter(array_map('trim', explode("\n", $text)), fn (string $line) => $line !== ''));
+	}
+
+	public function save(
+		string $snapshotFormat,
+		string $dateFormat,
+		array $mountFormats = [],
+		bool $autodetect = false,
+		string $autodetectPatterns = '',
+	): array {
 		$mountFormats = SnapshotManager::sanitizeMountFormats($mountFormats);
+		$patterns = SnapshotManager::sanitizeAutodetectPatterns(self::splitLines($autodetectPatterns));
 		$this->appConfig->setValueString('files_snapshots', 'snap_format', $snapshotFormat);
 		$this->appConfig->setValueString('files_snapshots', 'date_format', $dateFormat);
 		$this->appConfig->setValueArray('files_snapshots', 'mount_formats', $mountFormats);
+		$this->appConfig->setValueBool('files_snapshots', 'autodetect', $autodetect);
+		$this->appConfig->setValueArray('files_snapshots', 'autodetect_patterns', $patterns);
 		return [
 			'snapshotFormat' => $snapshotFormat,
 			'dateFormat' => $dateFormat,
 			'mountFormats' => $mountFormats,
+			'autodetect' => $autodetect,
+			'autodetectPatterns' => $patterns,
 		];
 	}
 }
