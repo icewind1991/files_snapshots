@@ -28,6 +28,16 @@ return [
 			'verb' => 'POST',
 		],
 		[
+			'name' => 'Admin#testPath',
+			'url' => '/settings/test-path',
+			'verb' => 'POST',
+		],
+		[
+			'name' => 'Admin#listLocations',
+			'url' => '/settings/locations',
+			'verb' => 'POST',
+		],
+		[
 			'name' => 'Admin#save',
 			'url' => '/settings/save',
 			'verb' => 'POST',

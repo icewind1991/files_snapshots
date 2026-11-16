@@ -145,6 +145,17 @@ class SnapshotManager {
 		$this->dataDirectory = $dataDirectory === '' ? null : self::normalizePath($dataDirectory);
 	}
 
+	public function getDataDirectory(): ?string {
+		return $this->dataDirectory;
+	}
+
+	/**
+	 * @return list<array{source: string, format: string}>
+	 */
+	public function getMountFormats(): array {
+		return $this->mountFormats;
+	}
+
 	private static function normalizePath(string $path): string {
 		$path = rtrim((string)preg_replace('#/{2,}#', '/', $path), '/');
 		return $path === '' ? '/' : $path;
@@ -268,6 +279,25 @@ class SnapshotManager {
 		}
 		$user = $matches[1];
 		return ['relative' => $matches[2] ?? '', 'user' => $user, 'length' => strlen($source) - strlen(self::USER_PLACEHOLDER) + strlen($user)];
+	}
+
+	/**
+	 * The folders matched by the source of a location, for sources containing the user placeholder
+	 *
+	 * @return list<string>
+	 */
+	public static function expandSource(string $source): array {
+		if (!str_contains($source, self::USER_PLACEHOLDER)) {
+			return [$source];
+		}
+		$pattern = str_replace(SnapshotFormat::escapeGlob(self::USER_PLACEHOLDER), '*', SnapshotFormat::escapeGlob($source));
+		$result = [];
+		foreach (glob($pattern, GLOB_ONLYDIR) ?: [] as $dir) {
+			if (self::matchSource($source, $dir) !== null) {
+				$result[] = $dir;
+			}
+		}
+		return $result;
 	}
 
 	private static function getRelativePath(string $root, string $path): ?string {

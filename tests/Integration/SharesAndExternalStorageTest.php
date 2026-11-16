@@ -27,10 +27,12 @@ use OCA\Files_Sharing\AppInfo\Application as SharingApplication;
 use OCA\Files_Sharing\External\MountProvider as ExternalMountProvider;
 use OCA\Files_Sharing\ISharedStorage;
 use OCA\Files_Sharing\MountProvider;
+use OCA\Files_Snapshots\ExternalStorages;
 use OCA\Files_Snapshots\SnapshotManager;
 use OCA\Files_Snapshots\Tests\TestSnapshotManager;
 use OCA\Files_Snapshots\Versions\SnapshotVersion;
 use OCA\Files_Snapshots\Versions\SnapshotVersionBackend;
+use OCP\App\IAppManager;
 use OCP\Constants;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\Files\Config\IMountProviderCollection;
@@ -50,7 +52,7 @@ use Test\TestCase;
 use Test\Traits\UserTrait;
 
 /**
- * Snapshots through a real share between two users
+ * Snapshots through a real share between two users, and listing real external storages
  *
  * @group DB
  */
@@ -61,6 +63,9 @@ class SharesAndExternalStorageTest extends TestCase {
 	private string $recipient;
 
 	private string $baseDir;
+	/** @var list<int> */
+	private array $createdStorages = [];
+	private bool $externalWasEnabled = true;
 
 	protected function setUp(): void {
 		parent::setUp();
@@ -110,6 +115,15 @@ class SharesAndExternalStorageTest extends TestCase {
 		Server::get(IUserSession::class)->setUser(null);
 		Server::get(SetupManager::class)->tearDown();
 
+		if ($this->createdStorages) {
+			$service = Server::get('OCA\Files_External\Service\GlobalStoragesService');
+			foreach ($this->createdStorages as $id) {
+				$service->removeStorage($id);
+			}
+		}
+		if (!$this->externalWasEnabled) {
+			Server::get(IAppManager::class)->disableApp('files_external');
+		}
 		parent::tearDown();
 	}
 
@@ -205,5 +219,34 @@ class SharesAndExternalStorageTest extends TestCase {
 
 		// without snapshots, shares keep the regular versions
 		$this->assertFalse((new SnapshotVersionBackend($this->getManager('')))->useBackendForStorage($sharedFile->getStorage()));
+	}
+
+	public function testListsExternalStoragesForSpecificUsers() {
+		$appManager = Server::get(IAppManager::class);
+		if (!$appManager->isInstalled('files_external') && !is_dir(\OC::$SERVERROOT . '/apps/files_external')) {
+			$this->markTestSkipped('files_external is not available');
+		}
+		$this->externalWasEnabled = $appManager->isEnabledForAnyone('files_external');
+		if (!$this->externalWasEnabled) {
+			$appManager->enableApp('files_external');
+		}
+		$appManager->loadApp('files_external');
+
+		mkdir($this->baseDir . '/ext-user', 0777, true);
+		mkdir($this->baseDir . '/ext-everyone', 0777, true);
+		$service = Server::get('OCA\Files_External\Service\GlobalStoragesService');
+		foreach ([
+			['/SnapshotsUser', $this->baseDir . '/ext-user', [$this->owner]],
+			['/SnapshotsEveryone', $this->baseDir . '/ext-everyone', []],
+		] as [$mountPoint, $datadir, $users]) {
+			$storage = $service->createStorage($mountPoint, 'local', 'null::null', ['datadir' => $datadir], [], $users, []);
+			$this->createdStorages[] = $service->addStorage($storage)->getId();
+		}
+
+		// a new instance, as the app would get it in a request where files_external isn't loaded yet
+		$storages = new ExternalStorages($appManager, \OC::$server, Server::get(\Psr\Log\LoggerInterface::class));
+		$found = array_column($storages->getLocalStorages(), 'datadir', 'mountPoint');
+		$this->assertEquals($this->baseDir . '/ext-user', $found['/SnapshotsUser'] ?? null, 'storages for specific users are listed');
+		$this->assertEquals($this->baseDir . '/ext-everyone', $found['/SnapshotsEveryone'] ?? null);
 	}
 }

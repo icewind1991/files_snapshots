@@ -34,12 +34,13 @@ class SnapshotFormat {
 	private ?string $postfix = null;
 
 	public function __construct(
-		string $format,
+		private readonly string $format,
 		private readonly string $dateFormat,
 		/** @var ?Closure(Snapshot): bool only use snapshots this returns true for */
 		private readonly ?Closure $filter = null,
 	) {
 		// allow the format to end in `%snapshot%` without a trailing slash
+		$format = $this->format;
 		if (str_ends_with($format, '/%snapshot%')) {
 			$format .= '/';
 		}
@@ -65,6 +66,10 @@ class SnapshotFormat {
 		return addcslashes($path, '\\*?[');
 	}
 
+	public function getFormat(): string {
+		return $this->format;
+	}
+
 	public function isValid(): bool {
 		return $this->prefix !== null;
 	}
@@ -87,6 +92,28 @@ class SnapshotFormat {
 				}
 			}
 		}
+	}
+
+	/**
+	 * Count the snapshots without accessing their content
+	 *
+	 * Accessing a snapshot can be slow, zfs for example mounts each snapshot when it's first accessed.
+	 * This only lists the snapshot directories, so it can include snapshots that don't contain the sub folder
+	 * from the format, or that the filter would exclude, unlike listSnapshots().
+	 */
+	public function countSnapshots(): int {
+		if ($this->prefix === null) {
+			return 0;
+		}
+		$count = 0;
+		foreach (glob($this->prefix, GLOB_ONLYDIR) ?: [] as $dir) {
+			foreach (scandir($dir) ?: [] as $file) {
+				if ($file[0] !== '.') {
+					$count++;
+				}
+			}
+		}
+		return $count;
 	}
 
 	public function getSnapshot(string $id): ?Snapshot {

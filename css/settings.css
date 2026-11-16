@@ -11,19 +11,6 @@
 	margin-bottom: 30px;
 }
 
-#files_snapshots table.result {
-	margin-top: 1em;
-	width: 100%;
-}
-
-#files_snapshots table.result td {
-	padding: 5px;
-}
-
-#files_snapshots table.result tr.error td {
-	border-bottom: none 0;
-}
-
 #files_snapshots div.loading {
 	padding-top: 15em;
 }
@@ -72,4 +59,71 @@
 	width: 400px;
 	max-width: calc(100% - 10px);
 	font-family: monospace;
+}
+
+/* test a path */
+
+#files_snapshots #test_path_result {
+	margin: 8px 0 16px;
+	white-space: pre-wrap;
+	font-family: monospace;
+	line-height: 1.5;
+}
+
+/* discovered snapshots */
+
+#files_snapshots table.locations {
+	margin-top: 1em;
+	width: 100%;
+	max-width: 1200px;
+}
+
+#files_snapshots table.locations th {
+	text-align: start;
+	font-weight: bold;
+	padding: 5px;
+}
+
+#files_snapshots table.locations td {
+	padding: 5px;
+	vertical-align: top;
+}
+
+#files_snapshots table.locations .path {
+	font-family: monospace;
+	word-break: break-all;
+}
+
+#files_snapshots table.locations .location-type {
+	display: block;
+	font-size: .85em;
+	opacity: .7;
+}
+
+#files_snapshots table.locations .location-details {
+	font-size: .85em;
+	opacity: .7;
+}
+
+#files_snapshots table.locations tr.location-snapshots.hidden {
+	display: none;
+}
+
+#files_snapshots table.locations tr.location-snapshots > td {
+	padding-inline-start: 2em;
+}
+
+#files_snapshots table.snapshot-list td {
+	padding: 2px 2em 2px 0;
+	font-family: monospace;
+}
+
+/* versions app warning */
+
+#files_snapshots p.warning {
+	margin: 1em 0;
+	padding: 8px 12px;
+	border-radius: var(--border-radius-large, 8px);
+	background-color: var(--color-warning-hover, rgba(233, 163, 34, .2));
+	max-width: 900px;
 }

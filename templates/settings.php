@@ -9,6 +9,9 @@ style('files_snapshots', 'settings');
 <form id="files_snapshots" class="section" action="#" method="post">
 	<h2><?php p($l->t('Snapshots')); ?></h2>
 	<p class="settings-hint"><?php p($l->t('Access filesystem snapshots from Nextcloud.')); ?></p>
+	<?php if (!$_['versions_enabled']): ?>
+		<p class="warning"><?php p($l->t('The "Versions" app is disabled, snapshots are shown as versions of a file, so it needs to be enabled for snapshots to be available.')); ?></p>
+	<?php endif; ?>
 	<table class="settings">
 		<tr>
 			<td>
@@ -81,22 +84,28 @@ style('files_snapshots', 'settings');
 		<code>#snapshot/%snapshot%</code> (Synology),
 		<code>@Recently-Snapshot/%snapshot%</code> (QNAP)
 	</p>
+	<h3><?php p($l->t('Test a path')); ?></h3>
+	<p class="settings-hint"><?php p($l->t('Check where snapshots for a file on disk are found with the settings above.')); ?></p>
+	<input type="text" id="test_path" placeholder="/mnt/external/Documents/file.txt"/>
+	<button type="button" id="test_path_button"><?php p($l->t('Test')); ?></button>
+	<div id="test_path_result" class="settings-hint"></div>
 	<p>
 		<input type="submit" value="<?php p($l->t('Save')); ?>"/>
 		<span id="save_status" class="msg"></span>
 	</p>
-	<h2><?php p($l->t('Discovered Snapshots')); ?></h2>
+	<h2><?php p($l->t('Discovered snapshots')); ?></h2>
+	<p class="settings-hint"><?php p($l->t('Where snapshots are found for the data directory, local external storages and additional locations, using the settings above. Locations without snapshots keep using the regular versions.')); ?></p>
 	<div class="loading"></div>
-	<table class="result grid hidden">
+	<table class="locations grid hidden">
 		<thead>
 		<tr>
-			<th><?php p($l->t('Snapshot')); ?></th>
-			<th><?php p($l->t('Date')); ?></th>
+			<th><?php p($l->t('Location')); ?></th>
+			<th><?php p($l->t('Folder on disk')); ?></th>
+			<th><?php p($l->t('Snapshots')); ?></th>
+			<th></th>
 		</tr>
 		</thead>
 		<tbody>
-		<tr>
-		</tr>
 		</tbody>
 	</table>
 </form>

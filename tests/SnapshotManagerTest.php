@@ -440,6 +440,9 @@ class SnapshotManagerTest extends TestCase {
 		$this->assertNull($manager->resolve("$base/home/bob/other/a.txt"));
 		$this->assertNull($manager->resolve("$base/home/files"));
 		$this->assertNull($manager->resolve("$base/home/../files/a.txt"));
+
+		$this->assertEquals(["$base/home/alice/files", "$base/home/bob/files", "$base/home/carol/files"], SnapshotManager::expandSource("$base/home/%user%/files"));
+		$this->assertEquals(['/plain'], SnapshotManager::expandSource('/plain'));
 	}
 
 	public function testUserPlaceholderValidation() {
@@ -571,6 +574,10 @@ class SnapshotManagerTest extends TestCase {
 			// the folder name is used literally, "a[1]" doesn't match "a1" and "b*" doesn't match other folders
 			$this->assertEquals($user, stream_get_contents($snapshots[0]->readFile($location->relativePath)));
 		}
+		$this->assertEqualsCanonicalizing(
+			["$base/hp/a[1]/files", "$base/hp/a1/files", "$base/hp/b*/files"],
+			SnapshotManager::expandSource("$base/hp/%user%/files"),
+		);
 	}
 
 	public function testAutodetectIgnoresUserCreatedSnapshotDirectories() {
@@ -714,10 +721,12 @@ class SnapshotManagerTest extends TestCase {
 	public function testSnapshotFormatEdgeCases() {
 		$invalid = new SnapshotFormat('/no/placeholder', 'Y-m-d');
 		$this->assertFalse($invalid->isValid());
+		$this->assertSame(0, $invalid->countSnapshots());
 		$this->assertSame([], iterator_to_array($invalid->listSnapshots()));
 		$this->assertNull($invalid->getSnapshot('anything'));
 
 		$format = new SnapshotFormat('/' . $this->baseDir . '/pre1/%snapshot%/sub', 'Y-m-d');
+		$this->assertSame(5, $format->countSnapshots());
 		$this->assertNull($format->getSnapshot('does-not-exist'));
 	}
 

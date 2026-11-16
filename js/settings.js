@@ -54,10 +54,12 @@
 		var autodetect = document.getElementById('autodetect');
 		var autodetectPatterns = document.getElementById('autodetect_patterns');
 		var mountBody = form.querySelector('table.mount-formats tbody');
-		var resultTable = form.querySelector('table.result');
-		var resultBody = form.querySelector('table.result tbody');
+		var locationsTable = form.querySelector('table.locations');
+		var locationsBody = form.querySelector('table.locations tbody');
 		var loading = form.querySelector('div.loading');
 		var saveStatus = document.getElementById('save_status');
+		var testPath = document.getElementById('test_path');
+		var testPathResult = document.getElementById('test_path_result');
 
 		function getMountFormats() {
 			var result = [];
@@ -104,39 +106,125 @@
 			});
 		}
 
-		var testSettings = debounce(function () {
-			resultTable.classList.add('hidden');
-			loading.classList.remove('hidden');
-			resultBody.textContent = '';
-			testFormat(format.value).then(function (snapshots) {
-				var names = Object.keys(snapshots);
-				if (names.length < 1) {
-					resultBody.appendChild(element('tr', {class: 'error'}, [
-						element('td', {colspan: '2', text: translate('No snapshots found')}),
-					]));
-				} else {
-					names.forEach(function (name) {
-						resultBody.appendChild(element('tr', {}, [
-							element('td', {text: name}),
-							element('td', {text: snapshots[name]}),
-						]));
+		function snapshotPath(location) {
+			var path = location.format.replace(/\/+$/, '');
+			if (location.relativePath) {
+				path += '/' + location.relativePath;
+			}
+			return path;
+		}
+
+		function renderSnapshotList(cell, snapshots) {
+			cell.textContent = '';
+			var names = Object.keys(snapshots);
+			if (names.length < 1) {
+				cell.appendChild(element('span', {class: 'error', text: translate('No snapshots found')}));
+				return;
+			}
+			var table = element('table', {class: 'snapshot-list'});
+			names.forEach(function (name) {
+				table.appendChild(element('tr', {}, [
+					element('td', {text: name}),
+					element('td', {text: snapshots[name]}),
+				]));
+			});
+			cell.appendChild(table);
+		}
+
+		function renderLocation(location) {
+			var label = element('td', {}, [
+				element('span', {class: 'location-type', text: location.type === 'external' ? translate('External storage') : ''}),
+				element('span', {text: location.label}),
+			]);
+			var snapshotsCell = element('td');
+			var toggleCell = element('td');
+			var row = element('tr', {class: 'location' + (location.found ? '' : ' not-found')}, [
+				label,
+				element('td', {class: 'path', text: location.source}),
+				snapshotsCell,
+				toggleCell,
+			]);
+			if (!location.found) {
+				snapshotsCell.appendChild(element('span', {class: 'error', text: translate('No snapshots found')}));
+				return [row];
+			}
+			snapshotsCell.appendChild(element('div', {class: 'path', text: snapshotPath(location)}));
+			snapshotsCell.appendChild(element('div', {class: 'location-details', text: (location.autodetected ? translate('auto-detected') + ', ' : '')
+				+ (window.n ? window.n('files_snapshots', '%n snapshot', '%n snapshots', location.snapshotCount) : location.snapshotCount + ' snapshots')}));
+			if (location.snapshotCount < 1) {
+				return [row];
+			}
+
+			var detailsCell = element('td', {colspan: '4'});
+			var detailsRow = element('tr', {class: 'location-snapshots hidden'}, [detailsCell]);
+			var toggle = element('button', {type: 'button', class: 'toggle-snapshots', 'aria-expanded': 'false', text: translate('Show')});
+			var loaded = false;
+			toggle.addEventListener('click', function () {
+				var expanded = detailsRow.classList.toggle('hidden') === false;
+				toggle.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+				toggle.textContent = expanded ? translate('Hide') : translate('Show');
+				if (expanded && !loaded) {
+					loaded = true;
+					detailsCell.textContent = translate('Loading…');
+					// resolve the location again, so the snapshots are listed exactly like they are used for versions
+					post('apps/files_snapshots/settings/test-path', Object.assign(getSettings(), {path: location.source})).then(function (result) {
+						renderSnapshotList(detailsCell, result.found ? result.snapshots : {});
+					}, function (error) {
+						loaded = false;
+						detailsCell.textContent = '';
+						detailsCell.appendChild(element('span', {class: 'error', text: error.message}));
 					});
 				}
+			});
+			toggleCell.appendChild(toggle);
+			return [row, detailsRow];
+		}
+
+		var refreshId = 0;
+		var refreshLocations = debounce(function () {
+			var id = ++refreshId;
+			locationsTable.classList.add('hidden');
+			loading.classList.remove('hidden');
+			post('apps/files_snapshots/settings/locations', getSettings()).then(function (locations) {
+				if (id !== refreshId) {
+					return;
+				}
+				locationsBody.textContent = '';
+				if (locations.length < 1) {
+					locationsBody.appendChild(element('tr', {}, [
+						element('td', {colspan: '4', class: 'error', text: translate('No snapshot locations configured')}),
+					]));
+				}
+				locations.forEach(function (location) {
+					renderLocation(location).forEach(function (row) {
+						locationsBody.appendChild(row);
+					});
+				});
 			}, function (error) {
-				resultBody.appendChild(element('tr', {class: 'error'}, [
-					element('td', {colspan: '2', text: translate('Failed to list snapshots: {error}', {error: error.message})}),
+				if (id !== refreshId) {
+					return;
+				}
+				locationsBody.textContent = '';
+				locationsBody.appendChild(element('tr', {}, [
+					element('td', {colspan: '4', class: 'error', text: translate('Failed to list snapshots: {error}', {error: error.message})}),
 				]));
 			}).then(function () {
-				resultTable.classList.remove('hidden');
-				loading.classList.add('hidden');
+				if (id === refreshId) {
+					locationsTable.classList.remove('hidden');
+					loading.classList.add('hidden');
+				}
 			});
-		}, 250);
+		}, 500);
 
 		function testMountRow(row) {
 			var status = row.querySelector('.mount-status');
 			var mountFormat = row.querySelector('.mount-format-input').value.trim();
 			showStatus(status, '');
 			if (!mountFormat) {
+				return;
+			}
+			if (mountFormat.indexOf('%user%') !== -1) {
+				showStatus(status, translate('See discovered snapshots below'));
 				return;
 			}
 			testFormat(mountFormat).then(function (snapshots) {
@@ -175,18 +263,60 @@
 			var button = event.target.closest('.remove-mount-format');
 			if (button) {
 				button.closest('tr').remove();
+				refreshLocations();
 			}
 		});
 		mountBody.addEventListener('input', function (event) {
 			if (event.target.classList.contains('mount-format-input')) {
 				testMountRows();
 			}
+			refreshLocations();
 		});
 
-		format.addEventListener('input', testSettings);
-		dateFormat.addEventListener('input', testSettings);
+		function runTestPath() {
+			var path = testPath.value.trim();
+			if (!path) {
+				return;
+			}
+			var data = getSettings();
+			data.path = path;
+			showStatus(testPathResult, translate('Testing…'));
+			post('apps/files_snapshots/settings/test-path', data).then(function (result) {
+				if (!result.found) {
+					showStatus(testPathResult, translate('No snapshot location found for this path'), true);
+					return;
+				}
+				var lines = [
+					translate('Path inside snapshots: {path}', {path: result.relativePath || '/'}),
+					translate('Snapshots: {count}, containing this path: {withFile}, distinct versions: {versions}', {
+						count: result.snapshotCount,
+						withFile: Object.keys(result.snapshots).length,
+						versions: result.versionCount,
+					}),
+				];
+				if (result.example) {
+					lines.push(translate('Example: {path}', {path: result.example}));
+				}
+				showStatus(testPathResult, lines.join('\n'));
+			}, function (error) {
+				showStatus(testPathResult, error.message, true);
+			});
+		}
+
+		document.getElementById('test_path_button').addEventListener('click', runTestPath);
+		testPath.addEventListener('keydown', function (event) {
+			if (event.key === 'Enter') {
+				event.preventDefault();
+				runTestPath();
+			}
+		});
+
+		format.addEventListener('input', refreshLocations);
+		dateFormat.addEventListener('input', refreshLocations);
 		dateFormat.addEventListener('input', testMountRows);
-		testSettings();
+		autodetect.addEventListener('change', refreshLocations);
+		autodetectPatterns.addEventListener('input', refreshLocations);
+		refreshLocations();
 		testMountRows();
 	}
 
