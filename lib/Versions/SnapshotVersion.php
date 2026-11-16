@@ -35,6 +35,7 @@ class SnapshotVersion implements IVersion {
 		private readonly Snapshot $snapshot,
 		private readonly FileInfo $sourceFile,
 		private readonly IUser $user,
+		private readonly string $versionPath,
 	) {
 	}
 
@@ -66,8 +67,11 @@ class SnapshotVersion implements IVersion {
 		return $this->sourceFile->getMimetype();
 	}
 
+	/**
+	 * Path of the file relative to the root of the snapshot
+	 */
 	public function getVersionPath(): string {
-		return $this->user->getUID() . '/' . $this->sourceFile->getInternalPath();
+		return $this->versionPath;
 	}
 
 	public function getUser(): IUser {

@@ -6,6 +6,9 @@
 >
 	<testsuite name='Nextcloud - Notify Redis App Tests'>
 		<directory suffix='.php'>.</directory>
+		<!-- psalm stubs and test fixtures, not tests -->
+		<exclude>./stubs</exclude>
+		<exclude>./fixtures</exclude>
 	</testsuite>
 	<filter>
 		<whitelist>

@@ -9,6 +9,9 @@ style('files_snapshots', 'settings');
 <form id="files_snapshots" class="section" action="#" method="post">
 	<h2><?php p($l->t('Snapshots')); ?></h2>
 	<p class="settings-hint"><?php p($l->t('Access filesystem snapshots from Nextcloud.')); ?></p>
+	<?php if (!$_['versions_enabled']): ?>
+		<p class="warning"><?php p($l->t('The "Versions" app is disabled, snapshots are shown as versions of a file, so it needs to be enabled for snapshots to be available.')); ?></p>
+	<?php endif; ?>
 	<table class="settings">
 		<tr>
 			<td>
@@ -36,27 +39,73 @@ style('files_snapshots', 'settings');
 		</tr>
 		<tr>
 			<td colspan="2">
-				<?php p($l->t('If no date can be parsed from the snapshot name, the mtime of the snapshot directory will be used')); ?>
-			</td>
-		</tr>
-		<tr>
-			<td colspan="2">
-				<input type="submit" value="<?php p($l->t('Save')); ?>"/>
+				<?php p($l->t('If the date format doesn\'t match the snapshot name, common date formats like 2026-11-15-1350 or 20261115T1350 are detected automatically. Otherwise the modification time of the snapshot directory is used.')); ?>
 			</td>
 		</tr>
 	</table>
-	<h2><?php p($l->t('Discovered Snapshots')); ?></h2>
-	<div class="loading"></div>
-	<table class="result grid hidden">
+	<h3><?php p($l->t('Additional snapshot locations')); ?></h3>
+	<p class="settings-hint"><?php p($l->t('Snapshots for files outside the data directory, such as local external storage. Enter the folder on disk and where its snapshots can be found.')); ?></p>
+	<table class="settings mount-formats">
 		<thead>
 		<tr>
-			<th><?php p($l->t('Snapshot')); ?></th>
-			<th><?php p($l->t('Date')); ?></th>
+			<th><?php p($l->t('Folder on disk')); ?></th>
+			<th><?php p($l->t('Snapshot format')); ?></th>
+			<th></th>
+			<th></th>
 		</tr>
 		</thead>
 		<tbody>
+		<?php foreach ($_['mount_formats'] as $mountFormat): ?>
+			<tr class="mount-format">
+				<td><input type="text" class="mount-source" value="<?php p($mountFormat['source']) ?>" placeholder="/mnt/external"/></td>
+				<td><input type="text" class="mount-format-input" value="<?php p($mountFormat['format']) ?>" placeholder="/mnt/external/.zfs/snapshot/%snapshot%"/></td>
+				<td class="mount-status"></td>
+				<td><button type="button" class="icon-delete remove-mount-format" title="<?php p($l->t('Remove')); ?>"></button></td>
+			</tr>
+		<?php endforeach; ?>
+		</tbody>
+	</table>
+	<button type="button" class="add-mount-format"><?php p($l->t('Add location')); ?></button>
+	<h3><?php p($l->t('Automatic detection')); ?></h3>
+	<p>
+		<input type="checkbox" class="checkbox" id="autodetect" <?php if ($_['autodetect']) {
+			p('checked');
+		} ?>/>
+		<label for="autodetect"><?php p($l->t('Automatically detect snapshot directories')); ?></label>
+	</p>
+	<p class="settings-hint"><?php p($l->t('For local storages without a configured location, search the folder of each file and its parent folders for one of these snapshot directories, one per line. The first folder that contains one is used.')); ?></p>
+	<textarea id="autodetect_patterns" rows="5" spellcheck="false"><?php p(implode("\n", $_['autodetect_patterns'])); ?></textarea>
+	<p class="settings-hint">
+		<?php p($l->t('Examples:')); ?>
+		<code>.zfs/snapshot/%snapshot%</code> (ZFS),
+		<code>.snapshots/%snapshot%/snapshot</code> (btrfs/snapper),
+		<code>.snapshot/%snapshot%</code> (NetApp),
+		<code>.snap/%snapshot%</code> (CephFS),
+		<code>#snapshot/%snapshot%</code> (Synology),
+		<code>@Recently-Snapshot/%snapshot%</code> (QNAP)
+	</p>
+	<h3><?php p($l->t('Test a path')); ?></h3>
+	<p class="settings-hint"><?php p($l->t('Check where snapshots for a file on disk are found with the settings above.')); ?></p>
+	<input type="text" id="test_path" placeholder="/mnt/external/Documents/file.txt"/>
+	<button type="button" id="test_path_button"><?php p($l->t('Test')); ?></button>
+	<div id="test_path_result" class="settings-hint"></div>
+	<p>
+		<input type="submit" value="<?php p($l->t('Save')); ?>"/>
+		<span id="save_status" class="msg"></span>
+	</p>
+	<h2><?php p($l->t('Discovered snapshots')); ?></h2>
+	<p class="settings-hint"><?php p($l->t('Where snapshots are found for the data directory, local external storages and additional locations, using the settings above. Locations without snapshots keep using the regular versions.')); ?></p>
+	<div class="loading"></div>
+	<table class="locations grid hidden">
+		<thead>
 		<tr>
+			<th><?php p($l->t('Location')); ?></th>
+			<th><?php p($l->t('Folder on disk')); ?></th>
+			<th><?php p($l->t('Snapshots')); ?></th>
+			<th></th>
 		</tr>
+		</thead>
+		<tbody>
 		</tbody>
 	</table>
 </form>
