@@ -45,6 +45,10 @@ class SnapshotFormat {
 		}
 	}
 
+	public static function escapeGlob(string $path): string {
+		return addcslashes($path, '\\*?[');
+	}
+
 	public function isValid(): bool {
 		return $this->prefix !== null;
 	}

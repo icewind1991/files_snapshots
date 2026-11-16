@@ -34,6 +34,12 @@ class SnapshotManager {
 	/** @var list<array{source: string, format: string}> */
 	private array $mountFormats = [];
 
+	/**
+	 * Placeholder in the source of an additional location that matches a single folder name, such as a user id,
+	 * the matched name is substituted into the snapshot format.
+	 */
+	public const USER_PLACEHOLDER = '%user%';
+
 	public function __construct(IAppConfig $appConfig, IConfig $config) {
 		$this->setDataDirectory($config->getSystemValueString('datadirectory'));
 		$this->setDateFormat($appConfig->getValueString('files_snapshots', 'date_format', 'Y-m-d_H:i:s'));
@@ -69,7 +75,11 @@ class SnapshotManager {
 			}
 			$source = trim((string)($mountFormat['source'] ?? ''));
 			$format = trim((string)($mountFormat['format'] ?? ''));
-			if ($source === '' || $source[0] !== '/' || !str_contains($format, '%snapshot%')) {
+			if ($source === '' || $source[0] !== '/' || !str_contains($format, '%snapshot%') || substr_count($source, self::USER_PLACEHOLDER) > 1) {
+				continue;
+			}
+			// the placeholder needs to be a complete folder name
+			if (str_contains($source, self::USER_PLACEHOLDER) && !preg_match('#(^|/)' . preg_quote(self::USER_PLACEHOLDER, '#') . '(/|$)#', $source)) {
 				continue;
 			}
 			$result[] = ['source' => self::normalizePath($source), 'format' => $format];
@@ -154,22 +164,45 @@ class SnapshotManager {
 		}
 
 		$best = null;
-		$bestRelative = '';
 		foreach ($candidates as $candidate) {
-			$relative = self::getRelativePath($candidate['source'], $path);
-			if ($relative !== null && ($best === null || strlen($candidate['source']) > strlen($best['source']))) {
-				$best = $candidate;
-				$bestRelative = $relative;
+			$match = self::matchSource($candidate['source'], $path);
+			if ($match !== null && ($best === null || $match['length'] > $best['length'])) {
+				$best = $match + ['format' => $candidate['format']];
 			}
 		}
 		if ($best !== null) {
-			$snapshotFormat = new SnapshotFormat($best['format'], $this->dateFormat);
+			$format = $best['user'] === null
+				? $best['format']
+				: str_replace(self::USER_PLACEHOLDER, SnapshotFormat::escapeGlob($best['user']), $best['format']);
+			$snapshotFormat = new SnapshotFormat($format, $this->dateFormat);
 			if ($snapshotFormat->isValid()) {
-				return new SnapshotLocation($snapshotFormat, $bestRelative);
+				return new SnapshotLocation($snapshotFormat, $best['relative']);
 			}
 		}
 
 		return null;
+	}
+
+	/**
+	 * Match a path against the source of a location, which can contain the user placeholder
+	 *
+	 * Returns the path relative to the source, the folder name matched by the placeholder
+	 * and the length of the matched part of the path, or null if the path isn't inside the source.
+	 *
+	 * @return ?array{relative: string, user: ?string, length: int}
+	 */
+	private static function matchSource(string $source, string $path): ?array {
+		if (!str_contains($source, self::USER_PLACEHOLDER)) {
+			$relative = self::getRelativePath($source, $path);
+			return $relative === null ? null : ['relative' => $relative, 'user' => null, 'length' => strlen($source)];
+		}
+		[$before, $after] = explode(self::USER_PLACEHOLDER, $source, 2);
+		$regex = '#^' . preg_quote($before, '#') . '([^/]+)' . preg_quote($after, '#') . '(?:/(.*))?$#s';
+		if (!preg_match($regex, $path, $matches) || $matches[1] === '.' || $matches[1] === '..') {
+			return null;
+		}
+		$user = $matches[1];
+		return ['relative' => $matches[2] ?? '', 'user' => $user, 'length' => strlen($source) - strlen(self::USER_PLACEHOLDER) + strlen($user)];
 	}
 
 	private static function getRelativePath(string $root, string $path): ?string {

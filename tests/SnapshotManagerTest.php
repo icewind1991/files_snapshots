@@ -268,6 +268,75 @@ class SnapshotManagerTest extends TestCase {
 		$this->assertEquals('autosnap_2021-02-24_12:53:43_daily', $snapshot->getName());
 	}
 
+	public function testUserPlaceholder() {
+		$base = rtrim($this->baseDir, '/');
+		// one backup folder per user, like /backups/<user>/files/daily.0
+		foreach (['alice', 'bob'] as $user) {
+			mkdir("$base/home/$user/files/docs", 0777, true);
+			mkdir("$base/backups/$user/files/daily.0/docs", 0777, true);
+			file_put_contents("$base/backups/$user/files/daily.0/docs/a.txt", $user);
+		}
+		mkdir("$base/home/carol/files", 0777, true);
+
+		$manager = $this->getManager('', 'Y-m-d', [
+			['source' => "$base/home/%user%/files", 'format' => "$base/backups/%user%/files/%snapshot%"],
+		]);
+		$location = $manager->resolve("$base/home/bob/files/docs/a.txt");
+		$this->assertNotNull($location);
+		$this->assertEquals('docs/a.txt', $location->relativePath);
+		$snapshots = $manager->listSnapshotsForLocation($location);
+		$this->assertCount(1, $snapshots);
+		$this->assertEquals('daily.0', $snapshots[0]->getName());
+		$this->assertEquals('bob', stream_get_contents($snapshots[0]->readFile($location->relativePath)));
+
+		$this->assertNull($manager->resolve("$base/home/bob/other/a.txt"));
+		$this->assertNull($manager->resolve("$base/home/files"));
+		$this->assertNull($manager->resolve("$base/home/../files/a.txt"));
+	}
+
+	public function testUserPlaceholderValidation() {
+		$this->assertEquals([
+			['source' => '/home/%user%/files', 'format' => '/backup/%user%/%snapshot%'],
+			['source' => '/home/%user%', 'format' => '/backup/%user%/%snapshot%'],
+		], SnapshotManager::sanitizeMountFormats([
+			['source' => '/home/%user%/files', 'format' => '/backup/%user%/%snapshot%'],
+			['source' => '/home/%user%', 'format' => '/backup/%user%/%snapshot%'],
+			['source' => '/home/%user%/%user%', 'format' => '/backup/%snapshot%'],
+			['source' => '/home/prefix-%user%', 'format' => '/backup/%snapshot%'],
+		]));
+	}
+
+	public function testUserPlaceholderLongestMatch() {
+		$base = rtrim($this->baseDir, '/');
+		mkdir("$base/specific/s1/x", 0777, true);
+		mkdir("$base/generic/alice/s1/files/x", 0777, true);
+		$manager = $this->getManager('', 'Y-m-d', [
+			['source' => "$base/home/%user%", 'format' => "$base/generic/%user%/%snapshot%"],
+			['source' => "$base/home/alice/files", 'format' => "$base/specific/%snapshot%"],
+		]);
+		$this->assertEquals('x', $manager->resolve("$base/home/alice/files/x")->relativePath);
+		$this->assertEquals('files/x', $manager->resolve("$base/home/bob/files/x")->relativePath);
+	}
+
+	public function testUserPlaceholderWithGlobCharacters() {
+		$base = rtrim($this->baseDir, '/');
+		foreach (['a[1]', 'a1', 'b*'] as $user) {
+			mkdir("$base/hp/$user/files", 0777, true);
+			mkdir("$base/bp/$user/daily.0/files", 0777, true);
+			file_put_contents("$base/bp/$user/daily.0/files/f.txt", $user);
+		}
+		$manager = $this->getManager('', 'Y-m-d', [
+			['source' => "$base/hp/%user%/files", 'format' => "$base/bp/%user%/%snapshot%/files"],
+		]);
+		foreach (['a[1]', 'b*'] as $user) {
+			$location = $manager->resolve("$base/hp/$user/files/f.txt");
+			$snapshots = $manager->listSnapshotsForLocation($location);
+			$this->assertCount(1, $snapshots, $user);
+			// the folder name is used literally, "a[1]" doesn't match "a1" and "b*" doesn't match other folders
+			$this->assertEquals($user, stream_get_contents($snapshots[0]->readFile($location->relativePath)));
+		}
+	}
+
 	public function testSnapshotFormatEdgeCases() {
 		$invalid = new SnapshotFormat('/no/placeholder', 'Y-m-d');
 		$this->assertFalse($invalid->isValid());
