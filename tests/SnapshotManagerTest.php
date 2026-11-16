@@ -151,4 +151,28 @@ class SnapshotManagerTest extends TestCase {
 		$this->assertEquals(DateTime::createFromFormat('Y-m-d_H:i:s', '2021-02-24_12:53:43'), $snapshots[5]->getSnapshotDate());
 		$this->assertEquals(new DateTime('@1714137760'), $snapshots[4]->getSnapshotDate());
 	}
+
+	public function testSymlinksOutOfSnapshotsAreNotFollowed() {
+		$base = rtrim($this->baseDir, '/');
+		mkdir("$base/outside", 0777, true);
+		file_put_contents("$base/outside/secret.txt", 'secret');
+		mkdir("$base/snap/s1/files", 0777, true);
+		file_put_contents("$base/snap/s1/files/real.txt", 'real');
+		// symlinks a user created before the snapshot was taken
+		symlink("$base/outside/secret.txt", "$base/snap/s1/files/leak.txt");
+		symlink("$base/outside", "$base/snap/s1/files/leakdir");
+		symlink("$base/snap/s1/files/real.txt", "$base/snap/s1/files/inside.txt");
+
+		$snapshot = new Snapshot("$base/snap/s1", 's1', 'Y-m-d');
+		$this->assertTrue($snapshot->hasFile('files/real.txt'));
+		$this->assertTrue($snapshot->hasFile('files/inside.txt'));
+		$this->assertEquals('real', stream_get_contents($snapshot->readFile('files/inside.txt')));
+
+		foreach (['files/leak.txt', 'files/leakdir/secret.txt', 'files/missing.txt'] as $file) {
+			$this->assertFalse($snapshot->hasFile($file), $file);
+			$this->assertFalse($snapshot->readFile($file), $file);
+			$this->assertSame(0, $snapshot->getSize($file), $file);
+			$this->assertSame(0, $snapshot->getMtime($file), $file);
+		}
+	}
 }

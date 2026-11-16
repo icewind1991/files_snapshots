@@ -47,16 +47,38 @@ class Snapshot {
 		return $this->path . '/' . $file;
 	}
 
+	/**
+	 * The path of a file in the snapshot, if it exists and is inside the snapshot
+	 *
+	 * A snapshot can contain symlinks, for example ones a user created before the snapshot was taken. Following one
+	 * that points outside the snapshot would give access to other files on the server, the same way the local
+	 * storage of Nextcloud doesn't follow those.
+	 */
+	private function resolveFile(string $file): ?string {
+		$path = $this->getFilePath($file);
+		$realPath = realpath($path);
+		$realRoot = realpath($this->path);
+		if ($realPath === false || $realRoot === false) {
+			return null;
+		}
+		if ($realPath !== $realRoot && !str_starts_with($realPath, rtrim($realRoot, '/') . '/')) {
+			return null;
+		}
+		return $path;
+	}
+
 	public function hasFile($file): bool {
-		return file_exists($this->getFilePath($file));
+		return $this->resolveFile((string)$file) !== null;
 	}
 
 	public function getMtime($file): int {
-		return (int)filemtime($this->getFilePath($file));
+		$path = $this->resolveFile((string)$file);
+		return $path === null ? 0 : (int)filemtime($path);
 	}
 
 	public function getSize($file): int {
-		return (int)filesize($this->getFilePath($file));
+		$path = $this->resolveFile((string)$file);
+		return $path === null ? 0 : (int)filesize($path);
 	}
 
 	public function getSnapshotDate(): DateTime {
@@ -74,6 +96,7 @@ class Snapshot {
 	 * @return resource|false
 	 */
 	public function readFile(string $file) {
-		return fopen($this->getFilePath($file), 'r');
+		$path = $this->resolveFile($file);
+		return $path === null ? false : fopen($path, 'r');
 	}
 }
