@@ -339,6 +339,33 @@ class SnapshotManagerTest extends TestCase {
 		$this->assertEquals('autosnap_2021-02-24_12:53:43_daily', $snapshot->getName());
 	}
 
+	public function testAutodetectSnapper() {
+		$base = $this->baseDir;
+		// snapper: <subvolume>/.snapshots/<number>/snapshot/... with the date in <subvolume>/.snapshots/<number>/info.xml
+		foreach ([1 => ['2026-11-14 10:00:00', 'one', 100], 2 => ['2026-11-15 10:00:00', 'two', 110], 10 => ['2026-11-13 10:00:00', 'zero', 90]] as $number => [$date, $content, $mtime]) {
+			mkdir("$base/home/.snapshots/$number/snapshot/user", 0777, true);
+			file_put_contents("$base/home/.snapshots/$number/info.xml", "<?xml version=\"1.0\"?>\n<snapshot>\n  <type>single</type>\n  <num>$number</num>\n  <date>$date</date>\n</snapshot>\n");
+			file_put_contents("$base/home/.snapshots/$number/snapshot/user/file.txt", $content);
+			touch("$base/home/.snapshots/$number/snapshot/user/file.txt", $mtime);
+		}
+		// a snapshot without the file, and an unrelated directory
+		mkdir("$base/home/.snapshots/3/snapshot", 0777, true);
+		mkdir("$base/home/.snapshots/junk", 0777, true);
+		mkdir("$base/home/user", 0777, true);
+		file_put_contents("$base/home/user/file.txt", 'current');
+
+		$manager = $this->getManager('', '*-*-*-Y-m-d-Hi', [], true);
+		$location = $manager->resolve("$base/home/user/file.txt");
+		$this->assertNotNull($location);
+		$this->assertEquals('user/file.txt', $location->relativePath);
+
+		$snapshots = $manager->listSnapshotsForLocation($location);
+		// sorted by the date from info.xml, not by number
+		$this->assertEquals(['10', '1', '2'], array_map(fn (Snapshot $snapshot) => $snapshot->getName(), $snapshots));
+		$this->assertEquals(new DateTime('2026-11-13 10:00:00', new \DateTimeZone('UTC')), $snapshots[0]->getSnapshotDate());
+		$this->assertEquals('two', stream_get_contents($snapshots[2]->readFile($location->relativePath)));
+	}
+
 	public function testAutodetectCephfs() {
 		$base = $this->baseDir;
 		// CephFS exposes .snap in every directory, the nearest one is used
@@ -439,6 +466,42 @@ class SnapshotManagerTest extends TestCase {
 		$this->assertEquals('files/x', $manager->resolve("$base/home/bob/files/x")->relativePath);
 	}
 
+	public static function dateProvider(): array {
+		return [
+			['zfs-auto-snap_daily-2026-11-15-1350', '2026-11-15 13:50:00'],
+			['zfs-auto-snap_frequent-2017-06-23-1930', '2017-06-23 19:30:00'],
+			['auto-2026-10-15_23-10', '2026-10-15 23:10:00'],
+			['GMT+01_2024-07-26_0755', '2024-07-26 07:55:00'],
+			['autosnap_2021-02-21_19:16:36_daily', '2021-02-21 19:16:36'],
+			['20260812-164508', '2026-08-12 16:45:08'],
+			['nc_data.20191026T0000', '2019-10-26 00:00:00'],
+			['backup-2026-11-15', '2026-11-15 00:00:00'],
+			['@GMT-2026.11.15-13.50.00', null], // dots between date parts are not detected
+			['daily.0', null],
+			['49', null],
+			['snap-9999-99-99', null],
+			['2026-13-01', null],
+			['1234567890123', null],
+		];
+	}
+
+	/**
+	 * @dataProvider dateProvider
+	 */
+	public function testDetectDate(string $name, ?string $expected) {
+		$date = Snapshot::detectDate($name);
+		$this->assertEquals($expected, $date?->format('Y-m-d H:i:s'));
+	}
+
+	public function testConfiguredDateFormatTakesPrecedence() {
+		// with the configured format the time is read as hours and minutes swapped
+		$snapshot = new Snapshot('/nonexistent', 'snap-2026-11-15-5013', '*-Y-m-d-iH', null);
+		$this->assertEquals('2026-11-15 13:50:00', $snapshot->getSnapshotDate()->format('Y-m-d H:i:s'));
+		// detected when the format doesn't match
+		$snapshot = new Snapshot('/nonexistent', 'snap-2026-11-15-1350', 'U', null);
+		$this->assertEquals('2026-11-15 13:50:00', $snapshot->getSnapshotDate()->format('Y-m-d H:i:s'));
+	}
+
 	public function testAutodetectStopsAtFilesystemRoot() {
 		$base = rtrim($this->baseDir, '/');
 		// snapshots of the parent dataset contain only the empty directory the child dataset is mounted on
@@ -471,6 +534,24 @@ class SnapshotManagerTest extends TestCase {
 
 		// without the mount, the parent snapshots are used
 		$this->assertNotNull($this->getManager('', 'Y-m-d', [], true)->resolve("$base/pool/child/sub/file.txt"));
+	}
+
+	public function testSnapperInfoFallbacks() {
+		$base = rtrim($this->baseDir, '/');
+		$cases = [
+			'invalid' => '<snapshot><date>not a date</date></snapshot>',
+			'missing' => null,
+			'large' => '<snapshot><date>2026-11-14 10:00:00</date>' . str_repeat(' ', 70000) . '</snapshot>',
+		];
+		foreach ($cases as $name => $info) {
+			mkdir("$base/sn/$name/snapshot", 0777, true);
+			touch("$base/sn/$name/snapshot", 1700000000);
+			if ($info !== null) {
+				file_put_contents("$base/sn/$name/info.xml", $info);
+			}
+			$snapshot = new Snapshot("$base/sn/$name/snapshot", $name, 'Y-m-d', "$base/sn/$name");
+			$this->assertEquals(1700000000, $snapshot->getSnapshotDate()->getTimestamp(), "falls back to the mtime for $name info.xml");
+		}
 	}
 
 	public function testUserPlaceholderWithGlobCharacters() {

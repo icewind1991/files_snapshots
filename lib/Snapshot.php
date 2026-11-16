@@ -31,6 +31,8 @@ class Snapshot {
 		string $path,
 		private readonly string $name,
 		private readonly string $dateFormat,
+		/** the directory named after the snapshot, which can differ from $path when snapshots contain a sub folder */
+		private readonly ?string $snapshotDir = null,
 	) {
 		$this->path = rtrim($path, '/');
 	}
@@ -84,6 +86,12 @@ class Snapshot {
 	public function getSnapshotDate(): DateTime {
 		$date = DateTime::createFromFormat($this->dateFormat, $this->getName());
 		if (!$date) {
+			$date = $this->getSnapperDate();
+		}
+		if (!$date) {
+			$date = self::detectDate($this->getName());
+		}
+		if (!$date) {
 			$date = new DateTime();
 			$mtime = $this->getMtime('');
 			$date->setTimestamp($mtime);
@@ -98,5 +106,50 @@ class Snapshot {
 	public function readFile(string $file) {
 		$path = $this->resolveFile($file);
 		return $path === null ? false : fopen($path, 'r');
+	}
+
+	/**
+	 * Find a date in common formats in a snapshot name, such as `zfs-auto-snap_daily-2026-11-15-1350`,
+	 * `auto-2026-10-15_23-10`, `GMT+01_2024-07-26_0755`, `autosnap_2021-02-21_19:16:36_daily` or `20260812-164508`
+	 */
+	public static function detectDate(string $name): ?DateTime {
+		$regex = '/(?<!\d)(\d{4})-?(\d{2})-?(\d{2})(?:[T _.-]?(\d{2})[:.-]?(\d{2})(?:[:.-]?(\d{2}))?)?(?!\d)/';
+		if (!preg_match_all($regex, $name, $matches, PREG_SET_ORDER)) {
+			return null;
+		}
+		foreach ($matches as $match) {
+			[$year, $month, $day] = [(int)$match[1], (int)$match[2], (int)$match[3]];
+			$hour = (int)($match[4] ?? 0);
+			$minute = (int)($match[5] ?? 0);
+			$second = (int)($match[6] ?? 0);
+			if ($year < 1970 || !checkdate($month, $day, $year) || $hour > 23 || $minute > 59 || $second > 59) {
+				continue;
+			}
+			$date = new DateTime();
+			$date->setDate($year, $month, $day);
+			$date->setTime($hour, $minute, $second);
+			return $date;
+		}
+		return null;
+	}
+
+	/**
+	 * snapper names snapshots by number and stores the date in an `info.xml` next to the snapshot
+	 */
+	private function getSnapperDate(): ?DateTime {
+		if ($this->snapshotDir === null) {
+			return null;
+		}
+		$info = $this->snapshotDir . '/info.xml';
+		if (!is_file($info) || filesize($info) > 65536) {
+			return null;
+		}
+		$content = (string)file_get_contents($info);
+		if (!preg_match('#<date>\s*([0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2})\s*</date>#', $content, $matches)) {
+			return null;
+		}
+		// snapper stores dates in UTC
+		$date = DateTime::createFromFormat('Y-m-d H:i:s', $matches[1], new \DateTimeZone('UTC'));
+		return $date ?: null;
 	}
 }

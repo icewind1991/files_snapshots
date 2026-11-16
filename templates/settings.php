@@ -36,7 +36,7 @@ style('files_snapshots', 'settings');
 		</tr>
 		<tr>
 			<td colspan="2">
-				<?php p($l->t('If no date can be parsed from the snapshot name, the mtime of the snapshot directory will be used')); ?>
+				<?php p($l->t('If the date format doesn\'t match the snapshot name, common date formats like 2026-11-15-1350 or 20261115T1350 are detected automatically. Otherwise the modification time of the snapshot directory is used.')); ?>
 			</td>
 		</tr>
 	</table>

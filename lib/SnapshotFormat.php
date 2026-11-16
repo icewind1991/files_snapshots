@@ -80,7 +80,7 @@ class SnapshotFormat {
 			foreach (scandir($dir) ?: [] as $file) {
 				$path = $dir . '/' . $file;
 				if ($file[0] !== '.' && is_dir($path) && is_dir($path . '/' . $this->postfix)) {
-					$snapshot = new Snapshot($path . '/' . $this->postfix, $file, $this->dateFormat);
+					$snapshot = new Snapshot($path . '/' . $this->postfix, $file, $this->dateFormat, $path);
 					if ($this->filter === null || ($this->filter)($snapshot)) {
 						yield $snapshot;
 					}
@@ -96,7 +96,7 @@ class SnapshotFormat {
 		foreach (glob($this->prefix, GLOB_ONLYDIR) ?: [] as $dir) {
 			$path = $dir . '/' . $id . '/' . $this->postfix;
 			if (is_dir($path)) {
-				$snapshot = new Snapshot($path, $id, $this->dateFormat);
+				$snapshot = new Snapshot($path, $id, $this->dateFormat, $dir . '/' . $id);
 				return $this->filter === null || ($this->filter)($snapshot) ? $snapshot : null;
 			}
 		}
