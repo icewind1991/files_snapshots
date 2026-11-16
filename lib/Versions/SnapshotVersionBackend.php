@@ -37,16 +37,28 @@ use OCP\Files\Storage\IStorage;
 use OCP\IUser;
 
 class SnapshotVersionBackend implements IVersionBackend {
+	/**
+	 * Group folders without encryption, other group folders can't use snapshots since their files are encrypted on disk.
+	 *
+	 * This backend is registered for the unencrypted group folder storage in info.xml, which is more specific than
+	 * the storage type group folders registers its own versions backend for, so snapshots are preferred when available.
+	 */
+	private const GROUP_FOLDER_STORAGE = 'OCA\GroupFolders\Mount\GroupFolderStorage';
+	private const UNENCRYPTED_GROUP_FOLDER_STORAGE = 'OCA\GroupFolders\Mount\GroupFolderNoEncryptionStorage';
+
 	public function __construct(
 		private readonly SnapshotManager $versionProvider,
 	) {
 	}
 
 	/**
-	 * Use snapshots for local storages (home folders, external storage, shares) that have snapshots,
+	 * Use snapshots for local storages (home folders, external storage, group folders, shares) that have snapshots,
 	 * other storages keep using their regular versions.
 	 */
 	public function useBackendForStorage(IStorage $storage): bool {
+		if ($storage->instanceOfStorage(self::GROUP_FOLDER_STORAGE) && !$storage->instanceOfStorage(self::UNENCRYPTED_GROUP_FOLDER_STORAGE)) {
+			return false;
+		}
 		$root = $this->getLocalPath($storage, '');
 		return $root !== null && $this->versionProvider->resolve($root) !== null;
 	}

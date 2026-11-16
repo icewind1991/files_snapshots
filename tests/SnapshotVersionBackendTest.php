@@ -138,6 +138,27 @@ class SnapshotVersionBackendTest extends TestCase {
 		$this->assertTrue($this->getBackend(true)->useBackendForStorage($home));
 	}
 
+	public function testGroupFolders() {
+		$unencrypted = $this->getMockStorage([
+			Local::class,
+			'OCA\GroupFolders\Mount\GroupFolderStorage',
+			'OCA\GroupFolders\Mount\GroupFolderNoEncryptionStorage',
+		], $this->baseDir . '/Michele');
+		$this->assertTrue($this->getBackend(true)->useBackendForStorage($unencrypted));
+
+		// files of encrypted group folders can't be read from snapshots
+		$encrypted = $this->getMockStorage([Local::class, 'OCA\GroupFolders\Mount\GroupFolderStorage'], $this->baseDir . '/Michele');
+		$this->assertFalse($this->getBackend(true)->useBackendForStorage($encrypted));
+
+		// group folder without snapshots keeps the group folder versions
+		$plain = $this->getMockStorage([
+			Local::class,
+			'OCA\GroupFolders\Mount\GroupFolderStorage',
+			'OCA\GroupFolders\Mount\GroupFolderNoEncryptionStorage',
+		], $this->baseDir . '/Plain');
+		$this->assertFalse($this->getBackend(true)->useBackendForStorage($plain));
+	}
+
 	public function testVersionsForExternalStorage() {
 		$backend = $this->getBackend(true);
 		$user = $this->createMock(IUser::class);
